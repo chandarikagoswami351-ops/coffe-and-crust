@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title> THE Coffee & Crust — Order Counter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white: #efe9e9;
+    --panel: #f0f8ff;
+    --panel-2: #e4f1fc;
+    --sky: #4d2f22;
+    --sky-deep: #4d2f22;
+    --espresso: #3d2b1f;
+    --crust: #e8967a;
+    --crust-soft: #f6d9cc;
+    --ink: #1f2d38;
+    --ink-soft: #5c7186;
+    --line: #d3e6f5;
+    --good: #3f9660;
+    --danger: #c9564a;
+    --shadow: 0 10px 30px -12px rgba(44, 95, 138, 0.25);
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--white);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, .display {
+    font-family: 'Fraunces', serif;
+    color: var(--espresso);
+    margin: 0;
+  }
+
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+  }
+  button:focus-visible,
+  input:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 3px solid var(--sky);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  /* ---------- Top Bar ---------- */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: var(--white);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-mark {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 30%, var(--crust-soft), var(--crust) 60%, var(--espresso) 130%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    color: var(--white);
+    font-size: 18px;
+    flex-shrink: 0;
+    box-shadow: inset 0 -3px 6px rgba(0,0,0,0.25);
+  }
+  .brand-text h1 { font-size: 21px; font-weight: 700; line-height: 1.1; }
+  .brand-text span {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sky-deep);
+    font-weight: 600;
+    margin-top: 3px;
+  }
+
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .pill-btn {
+    padding: 9px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .pill-btn:hover { transform: translateY(-1px); }
+  .pill-ghost {
+    background: var(--panel);
+    color: var(--sky-deep);
+    border: 1px solid var(--line);
+  }
+  .pill-ghost:hover { background: var(--panel-2); }
+  .pill-solid {
+    background: var(--sky-deep);
+    color: var(--white);
+  }
+  .pill-solid:hover { background: #234c70; }
+
+  .view-toggle {
+    display: none;
+    gap: 6px;
+    background: var(--panel);
+    padding: 4px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+  }
+  .view-toggle button {
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--sky-deep);
+  }
+  .view-toggle button.active {
+    background: var(--sky-deep);
+    color: var(--white);
+  }
+
+  /* ---------- Layout ---------- */
+  .app {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 0;
+    align-items: start;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .menu-side {
+    padding: 24px 22px 80px;
+    min-width: 0;
+  }
+  .order-side {
+    position: sticky;
+    top: 65px;
+    height: calc(100vh - 65px);
+    background: var(--panel);
+    border-left: 1px solid var(--line);
+    padding: 22px 20px 20px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------- Category tabs ---------- */
+  .cat-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin-bottom: 22px;
+    scrollbar-width: none;
+  }
+  .cat-tabs::-webkit-scrollbar { display: none; }
+  .cat-tab {
+    flex-shrink: 0;
+    padding: 9px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+  .cat-tab:hover { background: var(--panel-2); color: var(--sky-deep); }
+  .cat-tab.active {
+    background: var(--sky);
+    color: var(--white);
+    border-color: var(--sky);
+  }
+
+  .search-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .search-input {
+    flex: 1;
+    padding: 11px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .search-input::placeholder { color: var(--ink-soft); }
+
+  /* ---------- Menu sections ---------- */
+  .menu-section { margin-bottom: 36px; }
+  .menu-section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--crust-soft);
+  }
+  .menu-section-head h2 { font-size: 20px; font-weight: 600; }
+  .menu-section-head .count {
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 14px;
+  }
+
+  .item-card {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    position: relative;
+  }
+  .item-card:hover {
+    box-shadow: var(--shadow);
+    border-color: var(--sky);
+    transform: translateY(-2px);
+  }
+  .item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .item-name {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--espresso);
+    line-height: 1.25;
+  }
+  .item-desc {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    line-height: 1.45;
+    flex: 1;
+  }
+  .item-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 2px;
+  }
+  .item-price {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--sky-deep);
+  }
+  .stock-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #fdeceb;
+    color: var(--danger);
+  }
+  .add-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--sky);
+    color: var(--white);
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, transform 0.1s ease;
+    flex-shrink: 0;
+  }
+  .add-btn:hover { background: var(--sky-deep); }
+  .add-btn:active { transform: scale(0.92); }
+  .add-btn:disabled {
+    background: #dbe6ee;
+    color: #9fb3c2;
+    cursor: not-allowed;
+  }
+
+  .qty-stepper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel-2);
+    border-radius: 10px;
+    padding: 4px;
+  }
+  .qty-stepper button {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: var(--white);
+    color: var(--sky-deep);
+    font-weight: 700;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  }
+  .qty-stepper span {
+    min-width: 20px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .empty-menu {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Order Ticket ---------- */
+  .ticket-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .ticket-head h2 { font-size: 19px; font-weight: 600; }
+  .ticket-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--sky-deep);
+    background: var(--panel-2);
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+
+  .customer-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 14px 0 4px;
+  }
+  .customer-fields input {
+    padding: 10px 13px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--white);
+    font-size: 13.5px;
+    color: var(--ink);
+  }
+  .customer-fields input::placeholder { color: #a9bccb; }
+
+  .order-type-row {
+    display: flex;
+    gap: 6px;
+    margin: 10px 0 4px;
+  }
+  .order-type-row button {
+    flex: 1;
+    padding: 8px 6px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--white);
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+  }
+  .order-type-row button.active {
+    background: var(--sky-deep);
+    border-color: var(--sky-deep);
+    color: var(--white);
+  }
+
+  .ticket-divider {
+    height: 0;
+    border-top: 2px dashed #c3daea;
+    margin: 16px 0;
+    position: relative;
+  }
+
+  .ticket-items {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-height: 60px;
+    margin-bottom: 6px;
+  }
+  .ticket-items::-webkit-scrollbar { width: 5px; }
+  .ticket-items::-webkit-scrollbar-thumb { background: #c3daea; border-radius: 3px; }
+
+  .ticket-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--ink-soft);
+    padding: 30px 10px;
+    text-align: center;
+  }
+  .ticket-empty .glyph {
+    font-size: 30px;
+    opacity: 0.5;
+  }
+  .ticket-empty p { font-size: 13px; max-width: 200px; line-height: 1.5; }
+
+  .ticket-line {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 4px;
+    border-bottom: 1px solid #e4f1fc;
+  }
+  .tl-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+  .tl-unit {
+    font-size: 11px;
+    color: var(--ink-soft);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .tl-qty {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tl-qty button {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: var(--panel-2);
+    color: var(--sky-deep);
+    font-weight: 700;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tl-qty span {
+    min-width: 16px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+  .tl-total {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 13.5px;
+    color: var(--sky-deep);
+    text-align: right;
+    min-width: 58px;
+  }
+  .tl-remove {
+    grid-column: 1 / -1;
+    text-align: right;
+    font-size: 10.5px;
+    color: var(--danger);
+    font-weight: 600;
+    margin-top: -4px;
+    opacity: 0.85;
+  }
+  .tl-remove:hover { text-decoration: underline; }
+
+  .bill-summary {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-top: 6px;
+    position: relative;
+  }
+  .bill-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--ink-soft);
+    padding: 4px 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .bill-row.discount { color: var(--good); }
+  .bill-row .val { color: var(--ink); font-weight: 600; }
+  .bill-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+  .bill-total .lbl {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--espresso);
+  }
+  .bill-total .amt {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--sky-deep);
+  }
+
+  /* coffee ring watermark — signature detail */
+  .bill-summary::after {
+    content: "";
+    position: absolute;
+    right: 10px;
+    bottom: 8px;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 3px solid rgba(61, 43, 31, 0.055);
+    pointer-events: none;
+  }
+
+  .discount-row {
+    display: flex;
+    gap: 8px;
+    margin: 10px 0 2px;
+  }
+  .discount-row input {
+    flex: 1;
+    padding: 8px 11px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    font-size: 12.5px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .discount-row button {
+    padding: 8px 13px;
+    border-radius: 8px;
+    background: var(--panel-2);
+    color: var(--sky-deep);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .confirm-btn {
+    width: 100%;
+    padding: 15px;
+    border-radius: 12px;
+    background: var(--sky-deep);
+    color: var(--white);
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  .confirm-btn:hover { background: #234c70; }
+  .confirm-btn:active { transform: scale(0.98); }
+  .confirm-btn:disabled {
+    background: #cfdce6;
+    color: #8fa4b3;
+    cursor: not-allowed;
+  }
+  .clear-link {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+    font-weight: 600;
+  }
+  .clear-link:hover { color: var(--danger); }
+
+  /* ---------- Toast ---------- */
+  .toast {
+    position: fixed;
+    bottom: 26px;
+    left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: var(--espresso);
+    color: var(--white);
+    padding: 13px 22px;
+    border-radius: 11px;
+    font-size: 13.5px;
+    font-weight: 600;
+    box-shadow: 0 12px 28px -8px rgba(0,0,0,0.4);
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+  .toast .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--crust); flex-shrink: 0; }
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(31, 45, 56, 0.45);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal-card {
+    background: var(--white);
+    border-radius: 18px;
+    max-width: 400px;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.35);
+    animation: pop 0.2s ease;
+  }
+  @keyframes pop { from { opacity: 0; transform: scale(0.95) translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .receipt-head {
+    background: var(--sky-deep);
+    color: var(--white);
+    padding: 26px 24px 20px;
+    text-align: center;
+    border-radius: 18px 18px 0 0;
+  }
+  .receipt-check {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--good);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 26px;
+  }
+  .receipt-head h2 { color: var(--white); font-size: 20px; }
+  .receipt-head p { font-size: 12.5px; opacity: 0.85; margin-top: 5px; }
+
+  .receipt-body { padding: 22px 24px; }
+  .receipt-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 14px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .receipt-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--line);
+  }
+  .receipt-line .rname { color: var(--ink); }
+  .receipt-line .rval { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+  .receipt-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 2px solid var(--espresso);
+  }
+  .receipt-total-row .lbl { font-family: 'Fraunces', serif; font-weight: 700; font-size: 17px; }
+  .receipt-total-row .amt { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 21px; color: var(--sky-deep); }
+  .receipt-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .receipt-actions button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .btn-new { background: var(--sky); color: var(--white); }
+  .btn-new:hover { background: var(--sky-deep); }
+  .btn-print { background: var(--panel); color: var(--sky-deep); border: 1px solid var(--line); }
+
+  /* ---------- History Panel ---------- */
+  .history-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(31,45,56,0.4);
+    z-index: 90;
+    display: none;
+  }
+  .history-backdrop.show { display: block; }
+  .history-panel {
+    position: fixed;
+    top: 0;
+    right: -440px;
+    width: 420px;
+    max-width: 92vw;
+    height: 100vh;
+    background: var(--white);
+    z-index: 95;
+    box-shadow: -20px 0 50px -20px rgba(0,0,0,0.3);
+    transition: right 0.25s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .history-panel.show { right: 0; }
+  .history-head {
+    padding: 20px 22px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--panel);
+  }
+  .history-head h2 { font-size: 18px; }
+  .history-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--ink-soft);
+    border: 1px solid var(--line);
+  }
+  .history-stats {
+    display: flex;
+    gap: 10px;
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--line);
+  }
+  .hstat {
+    flex: 1;
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+  .hstat .num { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 18px; color: var(--sky-deep); }
+  .hstat .lbl { font-size: 10.5px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 3px; font-weight: 600; }
+
+  .history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 22px 30px;
+  }
+  .horder {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 15px;
+    margin-bottom: 12px;
+  }
+  .horder-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .horder-id { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: var(--sky-deep); }
+  .horder-time { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+  .horder-status {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .status-confirmed { background: #e8f5ec; color: var(--good); }
+  .status-preparing { background: #fff4e0; color: #b9770e; }
+  .status-ready { background: #e0f0fd; color: var(--sky-deep); }
+  .status-completed { background: #efe9f7; color: #6b4c9a; }
+  .horder-items { font-size: 12px; color: var(--ink-soft); line-height: 1.6; margin-bottom: 8px; }
+  .horder-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8px;
+    border-top: 1px dashed var(--line);
+  }
+  .horder-total { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--espresso); }
+  .status-select {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 9px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: var(--white);
+    color: var(--ink);
+  }
+  .history-empty {
+    text-align: center;
+    color: var(--ink-soft);
+    padding: 60px 20px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .history-search {
+    margin: 14px 22px 0;
+  }
+  .history-search input {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    font-size: 13px;
+  }
+  .clear-history-btn {
+    margin: 4px 22px 14px;
+    padding: 9px;
+    background: #fdeceb;
+    color: var(--danger);
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 9px;
+    text-align: center;
+  }
+
+  /* ---------- Mobile ---------- */
+  .mobile-order-bar {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--sky-deep);
+    color: var(--white);
+    padding: 14px 20px;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 50;
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.15);
+  }
+  .mobile-order-bar .mb-count {
+    font-size: 12px;
+    opacity: 0.85;
+  }
+  .mobile-order-bar .mb-total {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 17px;
+  }
+  .mobile-order-bar button {
+    background: var(--white);
+    color: var(--sky-deep);
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  @media (max-width: 880px) {
+    .app { grid-template-columns: 1fr; }
+    .order-side {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 100%;
+      max-width: 420px;
+      height: 100vh;
+      z-index: 80;
+      transition: right 0.25s ease;
+      box-shadow: -20px 0 50px -20px rgba(0,0,0,0.3);
+    }
+    .order-side.show { right: 0; }
+    .view-toggle { display: none !important; }
+    .menu-side { padding-bottom: 90px; }
+    .mobile-order-bar.visible { display: flex; }
+    .brand-text h1 { font-size: 18px; }
+    .topbar { padding: 12px 16px; }
+    .pill-btn span.txt { display: none; }
+    .pill-btn { padding: 9px 12px; }
+  }
+
+  @media (max-width: 480px) {
+    .menu-grid { grid-template-columns: 1fr 1fr; }
+    .menu-side { padding: 18px 14px 90px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark"><img src="" alt="logo"></div>
+    <div class="brand-text">
+      <h1> THE COFFEE & CRUST CAFE</h1>
+      <span>Order Counter</span>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button class="pill-btn pill-ghost" id="historyBtn">
+      <span>📋</span><span class="txt">Orders</span>
+    </button>
+    <button class="pill-btn pill-solid" id="mobileCartBtn" style="display:none;">
+      <span>🧾</span><span class="txt">Ticket</span>
+    </button>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- MENU -->
+  <div class="menu-side">
+    <div class="search-row">
+      <input type="text" class="search-input" id="searchInput" placeholder="Search the menu — e.g. latte, croissant, sourdough...">
+    </div>
+    <div class="cat-tabs" id="catTabs"></div>
+    <div id="menuSections"></div>
+  </div>
+
+  <!-- ORDER TICKET -->
+  <div class="order-side" id="orderSide">
+    <div class="ticket-head">
+      <h2>Current Order</h2>
+      <span class="ticket-num" id="ticketNum">#0001</span>
+    </div>
+
+    <div class="customer-fields">
+      <input type="text" id="custName" placeholder="Customer name">
+      <input type="tel" id="custPhone" placeholder="Phone (optional)">
+    </div>
+
+    <div class="order-type-row" id="orderTypeRow">
+      <button data-type="Dine-in" class="active">Dine-in</button>
+      <button data-type="Takeaway">Takeaway</button>
+      <button data-type="Delivery">Delivery</button>
+    </div>
+
+    <div class="ticket-divider"></div>
+
+    <div class="ticket-items" id="ticketItems">
+      <div class="ticket-empty">
+        <div class="glyph">☕</div>
+        <p>No items yet. Tap the + on any menu item to start the order.</p>
+      </div>
+    </div>
+
+    <div class="discount-row">
+      <input type="text" id="discountInput" placeholder="Promo code (try CAFE10)">
+      <button id="applyDiscount">Apply</button>
+    </div>
+
+    <div class="bill-summary">
+      <div class="bill-row"><span>Subtotal</span><span class="val" id="sumSubtotal">₹0.00</span></div>
+      <div class="bill-row discount" id="sumDiscountRow" style="display:none;"><span id="sumDiscountLabel">Discount</span><span class="val" id="sumDiscount">−₹0.00</span></div>
+      <div class="bill-row"><span>Tax (5%)</span><span class="val" id="sumTax">₹0.00</span></div>
+      <div class="bill-total">
+        <span class="lbl">Total</span>
+        <span class="amt" id="sumTotal">₹0.00</span>
+      </div>
+    </div>
+
+    <button class="confirm-btn" id="confirmBtn" disabled>
+      <span>✓</span> Confirm Order
+    </button>
+    <div class="clear-link" id="clearLink">Clear order</div>
+  </div>
+
+</div>
+
+<!-- Mobile sticky bar -->
+<div class="mobile-order-bar" id="mobileBar">
+  <div>
+    <div class="mb-count" id="mbCount">0 items</div>
+    <div class="mb-total" id="mbTotal">₹0.00</div>
+  </div>
+  <button id="mbViewBtn">View Ticket</button>
+</div>
+
+<!-- Confirmation modal -->
+<div class="modal-backdrop" id="confirmModal">
+  <div class="modal-card">
+    <div class="receipt-head">
+      <div class="receipt-check">✓</div>
+      <h2>Order Confirmed</h2>
+      <p id="receiptSub">We've got it — hang tight.</p>
+    </div>
+    <div class="receipt-body">
+      <div class="receipt-meta">
+        <span id="receiptId">#0001</span>
+        <span id="receiptTime">--</span>
+      </div>
+      <div id="receiptLines"></div>
+      <div class="receipt-total-row">
+        <span class="lbl">Total Paid</span>
+        <span class="amt" id="receiptTotal">₹0.00</span>
+      </div>
+      <div class="receipt-actions">
+        <button class="btn-print" id="printBtn">Print</button>
+        <button class="btn-new" id="newOrderBtn">New Order</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- History panel -->
+<div class="history-backdrop" id="historyBackdrop"></div>
+<div class="history-panel" id="historyPanel">
+  <div class="history-head">
+    <h2>Order History</h2>
+    <button class="history-close" id="historyClose">✕</button>
+  </div>
+  <div class="history-stats">
+    <div class="hstat"><div class="num" id="statCount">0</div><div class="lbl">Orders</div></div>
+    <div class="hstat"><div class="num" id="statToday">₹0</div><div class="lbl">Today</div></div>
+    <div class="hstat"><div class="num" id="statAll">₹0</div><div class="lbl">All-time</div></div>
+  </div>
+  <div class="history-search">
+    <input type="text" id="historySearch" placeholder="Search by name, phone, or order #">
+  </div>
+  <div class="history-list" id="historyList"></div>
+  <div class="clear-history-btn" id="clearHistoryBtn">Clear all order history</div>
+</div>
+
+<div class="toast" id="toast"><span class="dot"></span><span id="toastMsg"></span></div>
+
+<script>
+(function() {
+  "use strict";
+
+  /* ======================= MENU DATA ======================= */
+  const MENU = [
+    { id: "c1", cat: "Coffee", name: "Espresso", desc: "Double shot, tight crema, no water added.", price: 90, stock: true },
+    { id: "c2", cat: "Coffee", name: "Americano", desc: "Espresso lengthened with hot water.", price: 110, stock: true },
+    { id: "c3", cat: "Coffee", name: "Cappuccino", desc: "Equal parts espresso, steamed milk, and foam.", price: 140, stock: true },
+    { id: "c4", cat: "Coffee", name: "Cafe Latte", desc: "Silky steamed milk over a smooth espresso base.", price: 150, stock: true },
+    { id: "c5", cat: "Coffee", name: "Flat White", desc: "Ristretto shots with velvety micro-foam.", price: 155, stock: true },
+    { id: "c6", cat: "Coffee", name: "Mocha", desc: "Espresso, steamed milk, and real dark chocolate.", price: 165, stock: true },
+    { id: "c7", cat: "Coffee", name: "Caramel Macchiato", desc: "Vanilla, steamed milk, espresso, caramel drizzle.", price: 175, stock: true },
+    { id: "c8", cat: "Coffee", name: "Cold Brew", desc: "Steeped 18 hours — smooth, low-acid, over ice.", price: 160, stock: true },
+    { id: "c9", cat: "Coffee", name: "Iced Latte", desc: "Chilled espresso and cold milk over ice.", price: 155, stock: false },
+    { id: "c10", cat: "Coffee", name: "Affogato", desc: "A shot of hot espresso poured over vanilla gelato.", price: 180, stock: true },
+
+    { id: "b1", cat: "Bakery & Crust", name: "Butter Croissant", desc: "Laminated 27 times, baked fresh each morning.", price: 95, stock: true },
+    { id: "b2", cat: "Bakery & Crust", name: "Sourdough Loaf Slice", desc: "72-hour fermented crust, toasted to order.", price: 80, stock: true },
+    { id: "b3", cat: "Bakery & Crust", name: "Cheese & Herb Focaccia", desc: "Olive-oil crust with rosemary and sea salt.", price: 120, stock: true },
+    { id: "b4", cat: "Bakery & Crust", name: "Almond Danish", desc: "Flaky pastry crust with almond cream filling.", price: 110, stock: true },
+    { id: "b5", cat: "Bakery & Crust", name: "Cinnamon Roll", desc: "Soft-baked swirl with brown-butter glaze.", price: 105, stock: true },
+    { id: "b6", cat: "Bakery & Crust", name: "Garlic Bread Crostini", desc: "Crisp-crust baguette, roasted garlic butter.", price: 90, stock: true },
+    { id: "b7", cat: "Bakery & Crust", name: "Blueberry Muffin", desc: "Crumb-topped, packed with real blueberries.", price: 85, stock: true },
+    { id: "b8", cat: "Bakery & Crust", name: "Chocolate Chip Cookie", desc: "Crisp edge, molten center, sea-salt finish.", price: 60, stock: true },
+
+    { id: "s1", cat: "Savoury", name: "Grilled Cheese Sandwich", desc: "Sourdough crust, three-cheese blend, buttered.", price: 150, stock: true },
+    { id: "s2", cat: "Savoury", name: "Veg Club Sandwich", desc: "Triple-decker with fresh veg and herb mayo.", price: 160, stock: true },
+    { id: "s3", cat: "Savoury", name: "Cheese & Corn Puff Pastry", desc: "Flaky crust parcel, molten cheese-corn filling.", price: 95, stock: true },
+    { id: "s4", cat: "Savoury", name: "Quiche Slice", desc: "Buttery crust, egg custard, seasonal veg.", price: 140, stock: false },
+
+    { id: "d1", cat: "Cold & Other", name: "Iced Tea", desc: "House-brewed, lightly sweetened, over ice.", price: 100, stock: true },
+    { id: "d2", cat: "Cold & Other", name: "Fresh Lemonade", desc: "Hand-squeezed lemons, mint, soda top.", price: 95, stock: true },
+    { id: "d3", cat: "Cold & Other", name: "Hot Chocolate", desc: "Steamed milk with real melted dark chocolate.", price: 145, stock: true },
+    { id: "d4", cat: "Cold & Other", name: "Masala Chai", desc: "Slow-brewed with whole spices and milk.", price: 70, stock: true }
+  ];
+
+  const CATEGORY_ORDER = ["All", "Coffee", "Bakery & Crust", "Savoury", "Cold & Other"];
+  const TAX_RATE = 0.05;
+  const PROMO_CODES = {
+    "CAFE10": { type: "percent", value: 10, label: "CAFE10 (10% off)" },
+    "WELCOME50": { type: "flat", value: 50, label: "WELCOME50 (₹50 off)" }
+  };
+
+  /* ======================= STATE ======================= */
+  let currentCat = "All";
+  let searchQuery = "";
+  let cart = {};           // { itemId: qty }
+  let appliedDiscount = null;
+  let orderCounter = 1;
+  let orderHistory = [];
+
+  /* ======================= STORAGE ======================= */
+  const STORAGE_KEY = "coffeeAndCrust_v1";
+
+  function saveState() {
+    try {
+      const payload = {
+        orderCounter: orderCounter,
+        orderHistory: orderHistory
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch (e) {
+      console.error("Save failed:", e);
+      showToast("⚠ Could not save data locally");
+    }
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.orderCounter) orderCounter = data.orderCounter;
+      if (Array.isArray(data.orderHistory)) orderHistory = data.orderHistory;
+    } catch (e) {
+      console.error("Load failed:", e);
+    }
+  }
+
+  /* ======================= HELPERS ======================= */
+  function fmt(n) {
+    return "₹" + n.toFixed(2);
+  }
+
+  function pad4(n) {
+    return "#" + String(n).padStart(4, "0");
+  }
+
+  function getItem(id) {
+    return MENU.find(m => m.id === id);
+  }
+
+  function cartCount() {
+    return Object.values(cart).reduce((a, b) => a + b, 0);
+  }
+
+  function cartSubtotal() {
+    let sum = 0;
+    for (const id in cart) {
+      const item = getItem(id);
+      if (item) sum += item.price * cart[id];
+    }
+    return sum;
+  }
+
+  function computeDiscount(subtotal) {
+    if (!appliedDiscount) return 0;
+    if (appliedDiscount.type === "percent") {
+      return +(subtotal * appliedDiscount.value / 100).toFixed(2);
+    }
+    return Math.min(appliedDiscount.value, subtotal);
+  }
+
+  function computeBill() {
+    const subtotal = cartSubtotal();
+    const discount = computeDiscount(subtotal);
+    const taxed = Math.max(subtotal - discount, 0);
+    const tax = +(taxed * TAX_RATE).toFixed(2);
+    const total = +(taxed + tax).toFixed(2);
+    return { subtotal, discount, tax, total };
+  }
+
+  let toastTimer = null;
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    document.getElementById("toastMsg").textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+  }
+
+  /* ======================= RENDER: CATEGORY TABS ======================= */
+  function renderCatTabs() {
+    const wrap = document.getElementById("catTabs");
+    wrap.innerHTML = "";
+    CATEGORY_ORDER.forEach(cat => {
+      const btn = document.createElement("button");
+      btn.className = "cat-tab" + (cat === currentCat ? " active" : "");
+      btn.textContent = cat;
+      btn.addEventListener("click", () => {
+        currentCat = cat;
+        renderCatTabs();
+        renderMenu();
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  /* ======================= RENDER: MENU ======================= */
+  function renderMenu() {
+    const container = document.getElementById("menuSections");
+    container.innerHTML = "";
+
+    const q = searchQuery.trim().toLowerCase();
+    let items = MENU.filter(m => {
+      const matchesCat = currentCat === "All" || m.cat === currentCat;
+      const matchesQuery = !q || m.name.toLowerCase().includes(q) || m.desc.toLowerCase().includes(q);
+      return matchesCat && matchesQuery;
+    });
+
+    if (items.length === 0) {
+      container.innerHTML = '<div class="empty-menu">No items match your search. Try a different word, or clear the search box.</div>';
+      return;
+    }
+
+    // group by category, preserving CATEGORY_ORDER
+    const groups = {};
+    items.forEach(it => {
+      if (!groups[it.cat]) groups[it.cat] = [];
+      groups[it.cat].push(it);
+    });
+
+    const catsToShow = CATEGORY_ORDER.filter(c => c !== "All" && groups[c]);
+
+    catsToShow.forEach(cat => {
+      const section = document.createElement("div");
+      section.className = "menu-section";
+
+      const head = document.createElement("div");
+      head.className = "menu-section-head";
+      head.innerHTML = `<h2>${cat}</h2><span class="count">${groups[cat].length} item${groups[cat].length !== 1 ? "s" : ""}</span>`;
+      section.appendChild(head);
+
+      const grid = document.createElement("div");
+      grid.className = "menu-grid";
+
+      groups[cat].forEach(item => {
+        grid.appendChild(renderItemCard(item));
+      });
+
+      section.appendChild(grid);
+      container.appendChild(section);
+    });
+  }
+
+  function renderItemCard(item) {
+    const card = document.createElement("div");
+    card.className = "item-card";
+
+    const qty = cart[item.id] || 0;
+    const outOfStock = !item.stock;
+
+    let controlHtml;
+    if (outOfStock) {
+      controlHtml = `<span class="stock-tag">Sold Out</span>`;
+    } else if (qty > 0) {
+      controlHtml = `
+        <div class="qty-stepper" data-id="${item.id}">
+          <button class="q-dec" aria-label="Decrease quantity">−</button>
+          <span>${qty}</span>
+          <button class="q-inc" aria-label="Increase quantity">+</button>
+        </div>`;
+    } else {
+      controlHtml = `<button class="add-btn" data-id="${item.id}" aria-label="Add ${item.name}">+</button>`;
+    }
+
+    card.innerHTML = `
+      <div class="item-top">
+        <div>
+          <div class="item-name">${item.name}</div>
+        </div>
+      </div>
+      <div class="item-desc">${item.desc}</div>
+      <div class="item-bottom">
+        <span class="item-price mono">${fmt(item.price)}</span>
+        ${controlHtml}
+      </div>
+    `;
+
+    // wire events
+    const addBtn = card.querySelector(".add-btn");
+    if (addBtn) {
+      addBtn.addEventListener("click", () => {
+        addToCart(item.id);
+      });
+    }
+    const dec = card.querySelector(".q-dec");
+    const inc = card.querySelector(".q-inc");
+    if (dec) dec.addEventListener("click", () => changeQty(item.id, -1));
+    if (inc) inc.addEventListener("click", () => changeQty(item.id, 1));
+
+    return card;
+  }
+
+  /* ======================= CART ACTIONS ======================= */
+  function addToCart(id) {
+    const item = getItem(id);
+    if (!item || !item.stock) return;
+    cart[id] = (cart[id] || 0) + 1;
+    renderMenu();
+    renderTicket();
+    showToast(`Added ${item.name}`);
+  }
+
+  function changeQty(id, delta) {
+    if (!cart[id]) return;
+    cart[id] += delta;
+    if (cart[id] <= 0) delete cart[id];
+    renderMenu();
+    renderTicket();
+  }
+
+  function removeFromCart(id) {
+    delete cart[id];
+    renderMenu();
+    renderTicket();
+  }
+
+  function clearCart() {
+    cart = {};
+    appliedDiscount = null;
+    document.getElementById("discountInput").value = "";
+    document.getElementById("custName").value = "";
+    document.getElementById("custPhone").value = "";
+    setOrderType("Dine-in");
+    renderMenu();
+    renderTicket();
+  }
+
+  let currentOrderType = "Dine-in";
+  function setOrderType(type) {
+    currentOrderType = type;
+    document.querySelectorAll("#orderTypeRow button").forEach(b => {
+      b.classList.toggle("active", b.dataset.type === type);
+    });
+  }
+
+  /* ======================= RENDER: TICKET ======================= */
+  function renderTicket() {
+    document.getElementById("ticketNum").textContent = pad4(orderCounter);
+
+    const wrap = document.getElementById("ticketItems");
+    const ids = Object.keys(cart);
+
+    if (ids.length === 0) {
+      wrap.innerHTML = `
+        <div class="ticket-empty">
+          <div class="glyph">☕</div>
+          <p>No items yet. Tap the + on any menu item to start the order.</p>
+        </div>`;
+    } else {
+      wrap.innerHTML = "";
+      ids.forEach(id => {
+        const item = getItem(id);
+        if (!item) return;
+        const qty = cart[id];
+        const line = document.createElement("div");
+        line.className = "ticket-line";
+        line.innerHTML = `
+          <div>
+            <div class="tl-name">${item.name}</div>
+            <div class="tl-unit">${fmt(item.price)} each</div>
+          </div>
+          <div class="tl-qty" data-id="${id}">
+            <button class="tq-dec" aria-label="Decrease">−</button>
+            <span>${qty}</span>
+            <button class="tq-inc" aria-label="Increase">+</button>
+          </div>
+          <div class="tl-total">${fmt(item.price * qty)}</div>
+          <div class="tl-remove" data-id="${id}">Remove</div>
+        `;
+        line.querySelector(".tq-dec").addEventListener("click", () => changeQty(id, -1));
+        line.querySelector(".tq-inc").addEventListener("click", () => changeQty(id, 1));
+        line.querySelector(".tl-remove").addEventListener("click", () => removeFromCart(id));
+        wrap.appendChild(line);
+      });
+    }
+
+    const bill = computeBill();
+    document.getElementById("sumSubtotal").textContent = fmt(bill.subtotal);
+    document.getElementById("sumTax").textContent = fmt(bill.tax);
+    document.getElementById("sumTotal").textContent = fmt(bill.total);
+
+    const discRow = document.getElementById("sumDiscountRow");
+    if (appliedDiscount && bill.discount > 0) {
+      discRow.style.display = "flex";
+      document.getElementById("sumDiscountLabel").textContent = appliedDiscount.label;
+      document.getElementById("sumDiscount").textContent = "−" + fmt(bill.discount);
+    } else {
+      discRow.style.display = "none";
+    }
+
+    const confirmBtn = document.getElementById("confirmBtn");
+    confirmBtn.disabled = ids.length === 0;
+
+    // mobile bar
+    document.getElementById("mbCount").textContent = cartCount() + " item" + (cartCount() !== 1 ? "s" : "");
+    document.getElementById("mbTotal").textContent = fmt(bill.total);
+    document.getElementById("mobileBar").classList.toggle("visible", cartCount() > 0 && window.innerWidth <= 880);
+  }
+
+  /* ======================= DISCOUNT ======================= */
+  function applyDiscountCode() {
+    const raw = document.getElementById("discountInput").value.trim().toUpperCase();
+    if (!raw) {
+      appliedDiscount = null;
+      renderTicket();
+      return;
+    }
+    if (PROMO_CODES[raw]) {
+      appliedDiscount = PROMO_CODES[raw];
+      showToast(`Promo applied: ${appliedDiscount.label}`);
+    } else {
+      appliedDiscount = null;
+      showToast("Invalid promo code");
+    }
+    renderTicket();
+  }
+
+  /* ======================= CONFIRM ORDER ======================= */
+  function confirmOrder() {
+    const ids = Object.keys(cart);
+    if (ids.length === 0) return;
+
+    const bill = computeBill();
+    const name = document.getElementById("custName").value.trim() || "Walk-in Customer";
+    const phone = document.getElementById("custPhone").value.trim();
+
+    const lineItems = ids.map(id => {
+      const item = getItem(id);
+      return { id: id, name: item.name, price: item.price, qty: cart[id], lineTotal: +(item.price * cart[id]).toFixed(2) };
+    });
+
+    const order = {
+      orderId: pad4(orderCounter),
+      orderNum: orderCounter,
+      customerName: name,
+      customerPhone: phone,
+      orderType: currentOrderType,
+      items: lineItems,
+      subtotal: bill.subtotal,
+      discount: bill.discount,
+      discountLabel: appliedDiscount ? appliedDiscount.label : null,
+      tax: bill.tax,
+      total: bill.total,
+      status: "Confirmed",
+      timestamp: new Date().toISOString()
+    };
+
+    orderHistory.unshift(order);
+    orderCounter += 1;
+    saveState();
+
+    showReceipt(order);
+    clearCart();
+    renderHistoryStats();
+  }
+
+  function showReceipt(order) {
+    document.getElementById("receiptId").textContent = order.orderId;
+    document.getElementById("receiptSub").textContent = `${order.orderType} · ${order.customerName}`;
+    document.getElementById("receiptTime").textContent = new Date(order.timestamp).toLocaleString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+
+    const linesWrap = document.getElementById("receiptLines");
+    linesWrap.innerHTML = "";
+    order.items.forEach(li => {
+      const row = document.createElement("div");
+      row.className = "receipt-line";
+      row.innerHTML = `<span class="rname">${li.qty} × ${li.name}</span><span class="rval">${fmt(li.lineTotal)}</span>`;
+      linesWrap.appendChild(row);
+    });
+    if (order.discount > 0) {
+      const row = document.createElement("div");
+      row.className = "receipt-line";
+      row.innerHTML = `<span class="rname" style="color:var(--good)">${order.discountLabel}</span><span class="rval" style="color:var(--good)">−${fmt(order.discount)}</span>`;
+      linesWrap.appendChild(row);
+    }
+    const taxRow = document.createElement("div");
+    taxRow.className = "receipt-line";
+    taxRow.innerHTML = `<span class="rname">Tax (5%)</span><span class="rval">${fmt(order.tax)}</span>`;
+    linesWrap.appendChild(taxRow);
+
+    document.getElementById("receiptTotal").textContent = fmt(order.total);
+    document.getElementById("confirmModal").classList.add("show");
+  }
+
+  /* ======================= HISTORY ======================= */
+  function renderHistoryStats() {
+    document.getElementById("statCount").textContent = orderHistory.length;
+    const todayStr = new Date().toDateString();
+    const todaySum = orderHistory
+      .filter(o => new Date(o.timestamp).toDateString() === todayStr)
+      .reduce((s, o) => s + o.total, 0);
+    const allSum = orderHistory.reduce((s, o) => s + o.total, 0);
+    document.getElementById("statToday").textContent = "₹" + todaySum.toFixed(0);
+    document.getElementById("statAll").textContent = "₹" + allSum.toFixed(0);
+  }
+
+  function renderHistoryList(filter) {
+    const wrap = document.getElementById("historyList");
+    const q = (filter || "").trim().toLowerCase();
+
+    let list = orderHistory;
+    if (q) {
+      list = list.filter(o =>
+        o.orderId.toLowerCase().includes(q) ||
+        o.customerName.toLowerCase().includes(q) ||
+        (o.customerPhone && o.customerPhone.includes(q))
+      );
+    }
+
+    if (list.length === 0) {
+      wrap.innerHTML = `<div class="history-empty">${orderHistory.length === 0 ? "No orders yet. Confirmed orders will show up here." : "No orders match your search."}</div>`;
+      return;
+    }
+
+    wrap.innerHTML = "";
+    list.forEach(order => {
+      const card = document.createElement("div");
+      card.className = "horder";
+      const itemsStr = order.items.map(li => `${li.qty}× ${li.name}`).join(", ");
+      const statusClass = "status-" + order.status.toLowerCase();
+      const time = new Date(order.timestamp).toLocaleString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+
+      card.innerHTML = `
+        <div class="horder-top">
+          <div>
+            <div class="horder-id">${order.orderId} · ${order.customerName}</div>
+            <div class="horder-time">${time} · ${order.orderType}${order.customerPhone ? " · " + order.customerPhone : ""}</div>
+          </div>
+          <span class="horder-status ${statusClass}">${order.status}</span>
+        </div>
+        <div class="horder-items">${itemsStr}</div>
+        <div class="horder-bottom">
+          <span class="horder-total mono">${fmt(order.total)}</span>
+          <select class="status-select" data-id="${order.orderId}">
+            <option ${order.status === "Confirmed" ? "selected" : ""}>Confirmed</option>
+            <option ${order.status === "Preparing" ? "selected" : ""}>Preparing</option>
+            <option ${order.status === "Ready" ? "selected" : ""}>Ready</option>
+            <option ${order.status === "Completed" ? "selected" : ""}>Completed</option>
+          </select>
+        </div>
+      `;
+      card.querySelector(".status-select").addEventListener("change", (e) => {
+        updateOrderStatus(order.orderId, e.target.value);
+      });
+      wrap.appendChild(card);
+    });
+  }
+
+  function updateOrderStatus(orderId, newStatus) {
+    const order = orderHistory.find(o => o.orderId === orderId);
+    if (!order) return;
+    order.status = newStatus;
+    saveState();
+    renderHistoryList(document.getElementById("historySearch").value);
+    showToast(`${orderId} marked ${newStatus}`);
+  }
+
+  function clearHistory() {
+    if (!confirm("Clear all saved order history? This cannot be undone.")) return;
+    orderHistory = [];
+    saveState();
+    renderHistoryStats();
+    renderHistoryList("");
+    showToast("Order history cleared");
+  }
+
+  /* ======================= EVENTS ======================= */
+  document.getElementById("searchInput").addEventListener("input", (e) => {
+    searchQuery = e.target.value;
+    renderMenu();
+  });
+
+  document.getElementById("orderTypeRow").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-type]");
+    if (btn) setOrderType(btn.dataset.type);
+  });
+
+  document.getElementById("applyDiscount").addEventListener("click", applyDiscountCode);
+  document.getElementById("discountInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") applyDiscountCode();
+  });
+
+  document.getElementById("confirmBtn").addEventListener("click", confirmOrder);
+  document.getElementById("clearLink").addEventListener("click", () => {
+    if (cartCount() === 0) return;
+    if (confirm("Clear the current order?")) clearCart();
+  });
+
+  document.getElementById("newOrderBtn").addEventListener("click", () => {
+    document.getElementById("confirmModal").classList.remove("show");
+  });
+  document.getElementById("printBtn").addEventListener("click", () => window.print());
+  document.getElementById("confirmModal").addEventListener("click", (e) => {
+    if (e.target.id === "confirmModal") document.getElementById("confirmModal").classList.remove("show");
+  });
+
+  // history panel open/close
+  function openHistory() {
+    renderHistoryStats();
+    renderHistoryList(document.getElementById("historySearch").value);
+    document.getElementById("historyPanel").classList.add("show");
+    document.getElementById("historyBackdrop").classList.add("show");
+  }
+  function closeHistory() {
+    document.getElementById("historyPanel").classList.remove("show");
+    document.getElementById("historyBackdrop").classList.remove("show");
+  }
+  document.getElementById("historyBtn").addEventListener("click", openHistory);
+  document.getElementById("historyClose").addEventListener("click", closeHistory);
+  document.getElementById("historyBackdrop").addEventListener("click", closeHistory);
+  document.getElementById("historySearch").addEventListener("input", (e) => renderHistoryList(e.target.value));
+  document.getElementById("clearHistoryBtn").addEventListener("click", clearHistory);
+
+  // mobile order side toggle
+  function openMobileOrder() {
+    document.getElementById("orderSide").classList.add("show");
+  }
+  function closeMobileOrder() {
+    document.getElementById("orderSide").classList.remove("show");
+  }
+  document.getElementById("mobileCartBtn").addEventListener("click", openMobileOrder);
+  document.getElementById("mbViewBtn").addEventListener("click", openMobileOrder);
+
+  // close mobile order ticket by clicking outside on small screens — simple swipe-down affordance via outside tap
+  document.getElementById("orderSide").addEventListener("click", (e) => {
+    if (e.target.id === "orderSide") closeMobileOrder();
+  });
+
+  window.addEventListener("resize", () => {
+    const isMobile = window.innerWidth <= 880;
+    document.getElementById("mobileCartBtn").style.display = isMobile ? "flex" : "none";
+    if (!isMobile) {
+      document.getElementById("orderSide").classList.remove("show");
+    }
+    renderTicket();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeHistory();
+      closeMobileOrder();
+      document.getElementById("confirmModal").classList.remove("show");
+    }
+  });
+
+  /* ======================= INIT ======================= */
+  function init() {
+    loadState();
+    renderCatTabs();
+    renderMenu();
+    renderTicket();
+    renderHistoryStats();
+
+    const isMobile = window.innerWidth <= 880;
+    document.getElementById("mobileCartBtn").style.display = isMobile ? "flex" : "none";
+  }
+
+  init();
+})();
+</script>
+
+</body>
+</html>
