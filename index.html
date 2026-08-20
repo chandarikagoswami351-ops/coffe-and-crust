@@ -72,6 +72,19 @@
     * { animation: none !important; transition: none !important; }
   }
 
+  /* ---------- App reveal ---------- */
+  .app-root {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+  }
+  .app-root.revealed {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
   /* ---------- Top Bar ---------- */
   .topbar {
     position: sticky;
@@ -141,6 +154,7 @@
     transition: transform 0.15s ease, background 0.15s ease;
   }
   .pill-btn:hover { transform: translateY(-1px); }
+  .pill-btn:active { transform: translateY(0) scale(0.96); }
   .pill-ghost {
     background: var(--panel);
     color: var(--sky-deep);
@@ -160,6 +174,30 @@
   }
   .install-btn.show { display: flex; }
   .install-btn:hover { background: #d97f5f; }
+
+  .owner-btn {
+    background: var(--espresso);
+    color: var(--crust-soft);
+    position: relative;
+  }
+  .owner-btn:hover { background: #2c1f16; }
+  .owner-btn.is-active {
+    background: var(--good);
+    color: var(--white);
+  }
+  .owner-btn .owner-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--crust);
+    flex-shrink: 0;
+    animation: pulseDot 1.8s ease-in-out infinite;
+  }
+  .owner-btn.is-active .owner-dot { background: #d7f8e2; animation: none; }
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.75); }
+  }
 
   /* ---------- Layout ---------- */
   .app {
@@ -213,6 +251,12 @@
     background: var(--sky);
     color: var(--white);
     border-color: var(--sky);
+    animation: tabPop 0.25s ease;
+  }
+  @keyframes tabPop {
+    0% { transform: scale(0.92); }
+    60% { transform: scale(1.03); }
+    100% { transform: scale(1); }
   }
 
   .search-row {
@@ -228,11 +272,17 @@
     background: var(--panel);
     font-size: 14px;
     color: var(--ink);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
+  .search-input:focus { border-color: var(--sky); box-shadow: 0 0 0 3px rgba(74,144,217,0.15); }
   .search-input::placeholder { color: var(--ink-soft); }
 
   /* ---------- Menu sections ---------- */
-  .menu-section { margin-bottom: 36px; }
+  .menu-section { margin-bottom: 36px; opacity: 0; animation: sectionIn 0.4s ease forwards; }
+  @keyframes sectionIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
   .menu-section-head {
     display: flex;
     align-items: baseline;
@@ -269,12 +319,26 @@
     flex-direction: column;
     transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
     position: relative;
+    opacity: 0;
+    animation: cardIn 0.35s ease forwards;
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to { opacity: 1; transform: none; }
   }
   .item-card:hover {
     box-shadow: var(--shadow);
     border-color: var(--sky);
     transform: translateY(-2px);
   }
+  .item-card.owner-editing {
+    border-color: var(--crust);
+    box-shadow: 0 0 0 3px rgba(232,150,122,0.18);
+  }
+  .item-card.out-of-stock-card {
+    filter: grayscale(0.5);
+  }
+  .item-card.out-of-stock-card .item-img-slot { opacity: 0.55; }
 
   /* ---------- Image slot ---------- */
   .item-img-slot {
@@ -330,6 +394,22 @@
   .img-upload-btn:hover { background: var(--sky-deep); transform: scale(1.06); }
   .img-upload-btn:active { transform: scale(0.94); }
   .item-img-slot input[type="file"] { display: none; }
+
+  .owner-stock-flag {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(61,43,31,0.85);
+    color: var(--crust-soft);
+    backdrop-filter: blur(2px);
+  }
 
   .item-card-body {
     padding: 14px 16px 16px;
@@ -400,6 +480,12 @@
     color: #9fb3c2;
     cursor: not-allowed;
   }
+  .add-btn.pop { animation: addPop 0.35s ease; }
+  @keyframes addPop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.25) rotate(90deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
 
   .qty-stepper {
     display: flex;
@@ -429,6 +515,192 @@
     font-weight: 700;
     font-size: 14px;
   }
+
+  /* ---------- Owner edit panel on card ---------- */
+  .owner-edit-row {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 10px 10px 12px;
+    margin: 4px -6px -6px;
+    background: #fff8f2;
+    border: 1px dashed var(--crust);
+    border-radius: 10px;
+  }
+  .owner-edit-row .oe-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .owner-edit-row label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+    width: 40px;
+    flex-shrink: 0;
+  }
+  .owner-edit-row input[type="text"],
+  .owner-edit-row input[type="number"] {
+    flex: 1;
+    padding: 6px 9px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    font-size: 12.5px;
+    font-family: 'JetBrains Mono', monospace;
+    min-width: 0;
+  }
+  .owner-edit-row .oe-name-input {
+    font-family: 'Inter', sans-serif;
+  }
+  .stock-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .stock-switch {
+    width: 38px;
+    height: 21px;
+    border-radius: 999px;
+    background: #e2b0a5;
+    position: relative;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+  }
+  .stock-switch::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: var(--white);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    transition: transform 0.2s ease;
+  }
+  .stock-switch.in-stock { background: var(--good); }
+  .stock-switch.in-stock::after { transform: translateX(17px); }
+  .stock-toggle .st-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-soft);
+  }
+  .stock-toggle.is-in .st-label { color: var(--good); }
+  .oe-save-hint {
+    font-size: 10px;
+    color: var(--ink-soft);
+    text-align: right;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .oe-save-hint.show { opacity: 1; color: var(--good); font-weight: 700; }
+  .oe-delete-btn {
+    align-self: flex-start;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--danger);
+    padding: 2px 0;
+  }
+  .oe-delete-btn:hover { text-decoration: underline; }
+
+  .owner-edit-toggle {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 3;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: rgba(61,43,31,0.85);
+    color: var(--crust-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    backdrop-filter: blur(2px);
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .owner-edit-toggle:hover { background: var(--espresso); transform: scale(1.08); }
+  .owner-edit-toggle.active { background: var(--good); color: var(--white); }
+
+  .owner-add-card {
+    border: 2px dashed var(--sky);
+    background: var(--panel);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 210px;
+    color: var(--sky-deep);
+    font-weight: 700;
+    font-size: 13.5px;
+    flex-direction: column;
+    gap: 8px;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+  .owner-add-card:hover { background: var(--panel-2); transform: translateY(-2px); }
+  .owner-add-card .oac-plus {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--sky);
+    color: var(--white);
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .owner-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: linear-gradient(135deg, var(--espresso), #2c1f16);
+    color: var(--crust-soft);
+    padding: 12px 18px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    animation: bannerSlide 0.35s ease;
+  }
+  @keyframes bannerSlide {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: none; }
+  }
+  .owner-banner .ob-text {
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .owner-banner .ob-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--good);
+    flex-shrink: 0;
+    box-shadow: 0 0 0 0 rgba(63,150,96,0.5);
+    animation: obPulse 1.8s ease-in-out infinite;
+  }
+  @keyframes obPulse {
+    0% { box-shadow: 0 0 0 0 rgba(63,150,96,0.5); }
+    70% { box-shadow: 0 0 0 7px rgba(63,150,96,0); }
+    100% { box-shadow: 0 0 0 0 rgba(63,150,96,0); }
+  }
+  .owner-banner button {
+    background: rgba(255,255,255,0.12);
+    color: var(--white);
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .owner-banner button:hover { background: rgba(255,255,255,0.22); }
 
   .empty-menu {
     padding: 60px 20px;
@@ -485,6 +757,7 @@
     background: var(--white);
     border: 1px solid var(--line);
     color: var(--ink-soft);
+    transition: all 0.15s ease;
   }
   .order-type-row button.active {
     background: var(--sky-deep);
@@ -535,6 +808,11 @@
     gap: 10px;
     padding: 9px 4px;
     border-bottom: 1px solid #e4f1fc;
+    animation: lineIn 0.25s ease;
+  }
+  @keyframes lineIn {
+    from { opacity: 0; transform: translateX(6px); }
+    to { opacity: 1; transform: none; }
   }
   .tl-name {
     font-size: 13.5px;
@@ -626,6 +904,13 @@
     font-weight: 700;
     font-size: 22px;
     color: var(--sky-deep);
+    transition: transform 0.15s ease;
+  }
+  .bill-total .amt.bump { animation: totalBump 0.3s ease; }
+  @keyframes totalBump {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+    100% { transform: scale(1); }
   }
 
   .bill-summary::after {
@@ -762,6 +1047,12 @@
     justify-content: center;
     margin: 0 auto 12px;
     font-size: 26px;
+    animation: checkPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes checkPop {
+    0% { transform: scale(0); }
+    70% { transform: scale(1.15); }
+    100% { transform: scale(1); }
   }
   .receipt-head h2 { color: var(--white); font-size: 20px; }
   .receipt-head p { font-size: 12.5px; opacity: 0.85; margin-top: 5px; }
@@ -1003,7 +1294,7 @@
     .order-side.show { right: 0; }
     .menu-side { padding-bottom: 90px; }
     .mobile-order-bar.visible { display: flex; }
-    .brand-text h1 { font-size: 17px; max-width: 46vw; }
+    .brand-text h1 { font-size: 17px; max-width: 40vw; }
     .topbar { padding: calc(12px + var(--safe-top)) 14px 12px; }
     .pill-btn span.txt { display: none; }
     .pill-btn { padding: 9px 12px; }
@@ -1018,21 +1309,367 @@
   @media (min-width: 881px) {
     .mobile-order-bar { display: none !important; }
   }
+
+  /* ================= LOGIN SCREEN ================= */
+  .login-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: radial-gradient(circle at 20% 20%, #3a6da3 0%, #1f3a52 55%, #14232f 100%);
+    overflow: hidden;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+  }
+  .login-screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .login-bg-orbs { position: absolute; inset: 0; overflow: hidden; }
+  .login-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(2px);
+    opacity: 0.55;
+    animation: orbFloat linear infinite;
+  }
+  @keyframes orbFloat {
+    0% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(24px,-30px) scale(1.08); }
+    66% { transform: translate(-18px,18px) scale(0.94); }
+    100% { transform: translate(0,0) scale(1); }
+  }
+
+  .steam-wrap {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 220px;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0.35;
+  }
+  .steam {
+    position: absolute;
+    bottom: 30%;
+    width: 10px;
+    height: 60px;
+    background: linear-gradient(to top, rgba(255,255,255,0.5), transparent);
+    border-radius: 50%;
+    animation: steamRise 5s ease-in infinite;
+  }
+  @keyframes steamRise {
+    0% { transform: translateY(0) translateX(0) scaleX(1); opacity: 0; }
+    15% { opacity: 0.6; }
+    100% { transform: translateY(-260px) translateX(18px) scaleX(1.8); opacity: 0; }
+  }
+
+  .login-card {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 380px;
+    background: rgba(255,255,255,0.97);
+    border-radius: 22px;
+    padding: 36px 30px 30px;
+    box-shadow: 0 40px 80px -20px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08);
+    animation: cardRise 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes cardRise {
+    from { opacity: 0; transform: translateY(40px) scale(0.94); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .login-mark {
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    background: linear-gradient(145deg, var(--sky), var(--sky-deep));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    box-shadow: 0 12px 26px -8px rgba(44,95,138,0.55);
+    animation: markFloat 3.4s ease-in-out infinite;
+    position: relative;
+  }
+  @keyframes markFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-6px) rotate(-4deg); }
+  }
+  .login-mark::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid rgba(74,144,217,0.35);
+    animation: markRing 2.6s ease-out infinite;
+  }
+  @keyframes markRing {
+    0% { transform: scale(0.9); opacity: 0.9; }
+    100% { transform: scale(1.35); opacity: 0; }
+  }
+
+  .login-title {
+    text-align: center;
+    font-size: 23px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .login-sub {
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-bottom: 26px;
+  }
+
+  .login-tabs {
+    display: flex;
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 22px;
+    position: relative;
+  }
+  .login-tab {
+    flex: 1;
+    position: relative;
+    z-index: 2;
+    padding: 10px 8px;
+    text-align: center;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    border-radius: 9px;
+    transition: color 0.25s ease;
+  }
+  .login-tab.active { color: var(--white); }
+  .login-tab-slider {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: calc(50% - 4px);
+    height: calc(100% - 8px);
+    background: var(--sky-deep);
+    border-radius: 9px;
+    transition: transform 0.3s cubic-bezier(0.65, 0, 0.35, 1);
+    z-index: 1;
+  }
+  .login-tab-slider.owner-pos { transform: translateX(100%); background: var(--espresso); }
+
+  .login-panes { position: relative; min-height: 168px; }
+  .login-pane {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    opacity: 0;
+    transform: translateX(14px);
+    pointer-events: none;
+    transition: opacity 0.28s ease, transform 0.28s ease;
+  }
+  .login-pane.active {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    position: relative;
+  }
+
+  .field-group { position: relative; }
+  .field-group input {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 11px;
+    border: 1.5px solid var(--line);
+    background: var(--white);
+    font-size: 14.5px;
+    color: var(--ink);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .field-group input:focus {
+    border-color: var(--sky);
+    box-shadow: 0 0 0 4px rgba(74,144,217,0.14);
+  }
+  .field-group input::placeholder { color: #a9bccb; }
+  .field-group.err input {
+    border-color: var(--danger);
+    animation: shakeField 0.4s ease;
+  }
+  @keyframes shakeField {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-7px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(3px); }
+  }
+
+  .pw-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--sky-deep);
+    padding: 4px 6px;
+  }
+
+  .login-submit {
+    padding: 14px;
+    border-radius: 11px;
+    background: var(--sky-deep);
+    color: var(--white);
+    font-size: 14.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    transition: background 0.15s ease, transform 0.1s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .login-submit:hover { background: #234c70; }
+  .login-submit:active { transform: scale(0.98); }
+  .login-pane[data-pane="owner"] .login-submit { background: var(--espresso); }
+  .login-pane[data-pane="owner"] .login-submit:hover { background: #2c1f16; }
+
+  .login-submit .btn-spinner {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.35);
+    border-top-color: var(--white);
+    display: none;
+    animation: spin 0.7s linear infinite;
+  }
+  .login-submit.loading .btn-spinner { display: inline-block; }
+  .login-submit.loading .btn-label { opacity: 0.7; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .login-error {
+    font-size: 12px;
+    color: var(--danger);
+    font-weight: 600;
+    text-align: center;
+    min-height: 16px;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .login-error.show { opacity: 1; transform: none; }
+
+  .login-hint {
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-align: center;
+    margin-top: 2px;
+  }
+  .login-hint b { color: var(--sky-deep); }
+
+  .guest-skip {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 12.5px;
+    color: rgba(255,255,255,0.75);
+    font-weight: 600;
+  }
+  .guest-skip button {
+    color: var(--white);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-weight: 700;
+  }
+
+  @media (max-width: 420px) {
+    .login-card { padding: 30px 22px 24px; border-radius: 18px; }
+  }
 </style>
 </head>
 <body>
+
+<!-- ================= LOGIN SCREEN ================= -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-bg-orbs" id="loginOrbs"></div>
+  <div class="steam-wrap" id="steamWrap"></div>
+
+  <div class="login-card">
+    <div class="login-mark">☕</div>
+    <div class="login-title">The Coffee and Crust</div>
+    <div class="login-sub">Sign in to open the order counter</div>
+
+    <div class="login-tabs">
+      <div class="login-tab-slider" id="loginTabSlider"></div>
+      <button class="login-tab active" data-pane="staff" id="tabStaff">Staff</button>
+      <button class="login-tab" data-pane="owner" id="tabOwner">Owner</button>
+    </div>
+
+    <div class="login-panes">
+      <!-- STAFF PANE -->
+      <form class="login-pane active" data-pane="staff" id="paneStaff" autocomplete="off">
+        <div class="field-group" id="staffNameGroup">
+          <input type="text" id="staffName" placeholder="Your name" autocomplete="off">
+        </div>
+        <div class="field-group" id="staffPinGroup">
+          <input type="password" id="staffPin" placeholder="Counter PIN" inputmode="numeric" autocomplete="off">
+          <button type="button" class="pw-toggle" data-target="staffPin">SHOW</button>
+        </div>
+        <div class="login-error" id="staffError"></div>
+        <button type="submit" class="login-submit" id="staffSubmit">
+          <span class="btn-spinner"></span>
+          <span class="btn-label">Enter Counter</span>
+        </button>
+        <div class="login-hint">Default PIN is <b>1234</b> — staff can change this isn't required, just start the shift.</div>
+      </form>
+
+      <!-- OWNER PANE -->
+      <form class="login-pane" data-pane="owner" id="paneOwner" autocomplete="off">
+        <div class="field-group" id="ownerUserGroup">
+          <input type="text" id="ownerUser" placeholder="Owner username" autocomplete="off">
+        </div>
+        <div class="field-group" id="ownerPassGroup">
+          <input type="password" id="ownerPass" placeholder="Owner password" autocomplete="off">
+          <button type="button" class="pw-toggle" data-target="ownerPass">SHOW</button>
+        </div>
+        <div class="login-error" id="ownerError"></div>
+        <button type="submit" class="login-submit" id="ownerSubmit">
+          <span class="btn-spinner"></span>
+          <span class="btn-label">Unlock Owner Panel</span>
+        </button>
+        <div class="login-hint">Owner access lets you edit items, prices &amp; stock.</div>
+      </form>
+    </div>
+
+    <div class="guest-skip">
+      <button type="button" id="guestSkipBtn">Continue without signing in →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MAIN APP ================= -->
+<div class="app-root" id="appRoot">
 
 <div class="topbar">
   <div class="brand">
     <div class="brand-mark"><img src="logo.png" alt="The Coffee and Crust logo"></div>
     <div class="brand-text">
       <h1>The Coffee and Crust</h1>
-      <span>Order Counter</span>
+      <span id="brandSub">Order Counter</span>
     </div>
   </div>
   <div class="topbar-actions">
     <button class="pill-btn install-btn" id="installBtn">
       <span>⬇</span><span class="txt">Install App</span>
+    </button>
+    <button class="pill-btn owner-btn" id="ownerToggleBtn">
+      <span class="owner-dot"></span><span class="txt" id="ownerBtnLabel">Owner Login</span>
     </button>
     <button class="pill-btn pill-ghost" id="historyBtn">
       <span>📋</span><span class="txt">Orders</span>
@@ -1047,6 +1684,7 @@
 
   <!-- MENU -->
   <div class="menu-side">
+    <div id="ownerBannerWrap"></div>
     <div class="search-row">
       <input type="text" class="search-input" id="searchInput" placeholder="Search the menu — e.g. pizza, coffee, sandwich...">
     </div>
@@ -1160,12 +1798,26 @@
 
 <div class="toast" id="toast"><span class="dot"></span><span id="toastMsg"></span></div>
 
+</div><!-- /app-root -->
+
 <script>
 (function() {
   "use strict";
 
+  /* ======================= AUTH CONFIG =======================
+     Change these to whatever you want. This is a light front-of-house
+     lock (not bank-grade security) — good enough to stop random
+     customers from opening the owner panel on a shared counter tablet.
+  ============================================================== */
+  const STAFF_PIN = "1234";
+  const OWNER_USERNAME = "owner";
+  const OWNER_PASSWORD = "crust786";
+
+  const AUTH_KEY = "coffeeAndCrust_auth_v1";
+  let authState = { role: null, name: "" }; // role: null | "staff" | "owner"
+
   /* ======================= MENU DATA (from your printed menu) ======================= */
-  const MENU = [
+  let MENU = [
     // ---- PIZZA (8 Inches) ----
     { id: "pz1", cat: "Pizza (8 Inch)", name: "Margarita Pizza", desc: "Classic tomato base with mozzarella.", price: 130, stock: true, img: null },
     { id: "pz2", cat: "Pizza (8 Inch)", name: "Italian Pizza", desc: "Herb-loaded tomato base, Italian seasoning.", price: 150, stock: true, img: null },
@@ -1328,10 +1980,12 @@
   let orderCounter = 1;
   let orderHistory = [];
   let itemImages = {};     // { itemId: dataURL }  -- manually uploaded photos
+  let editingItemId = null; // owner: which card currently has its edit row open
 
   /* ======================= STORAGE ======================= */
   const STORAGE_KEY = "coffeeAndCrust_v2";
   const IMG_STORAGE_KEY = "coffeeAndCrust_itemImages_v1";
+  const MENU_STORAGE_KEY = "coffeeAndCrust_menuData_v1";
 
   function saveState() {
     try {
@@ -1353,6 +2007,27 @@
       }
       const rawImgs = localStorage.getItem(IMG_STORAGE_KEY);
       if (rawImgs) itemImages = JSON.parse(rawImgs);
+
+      const rawMenu = localStorage.getItem(MENU_STORAGE_KEY);
+      if (rawMenu) {
+        const savedMenu = JSON.parse(rawMenu);
+        if (Array.isArray(savedMenu) && savedMenu.length) {
+          // merge saved edits onto base MENU by id; keep any owner-added new items too
+          const baseIds = new Set(MENU.map(m => m.id));
+          const merged = MENU.map(baseItem => {
+            const found = savedMenu.find(s => s.id === baseItem.id);
+            return found ? Object.assign({}, baseItem, found) : baseItem;
+          });
+          savedMenu.forEach(s => { if (!baseIds.has(s.id)) merged.push(s); });
+          MENU = merged;
+        }
+      }
+
+      const rawAuth = localStorage.getItem(AUTH_KEY);
+      if (rawAuth) {
+        const a = JSON.parse(rawAuth);
+        if (a && (a.role === "staff" || a.role === "owner")) authState = a;
+      }
     } catch (e) {
       console.error("Load failed:", e);
     }
@@ -1365,6 +2040,21 @@
       console.error("Image save failed:", e);
       showToast("⚠ Photo too large to save — try a smaller image");
     }
+  }
+
+  function saveMenu() {
+    try {
+      localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(MENU));
+    } catch (e) {
+      console.error("Menu save failed:", e);
+      showToast("⚠ Could not save menu changes locally");
+    }
+  }
+
+  function saveAuth() {
+    try {
+      localStorage.setItem(AUTH_KEY, JSON.stringify(authState));
+    } catch (e) { /* non-fatal */ }
   }
 
   /* ======================= HELPERS ======================= */
@@ -1413,6 +2103,262 @@
     toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
   }
 
+  /* ======================= LOGIN SCREEN ======================= */
+  function buildLoginDecor() {
+    const orbWrap = document.getElementById("loginOrbs");
+    const colors = ["#4a90d9", "#e8967a", "#7fb8e8", "#f0c49a"];
+    for (let i = 0; i < 6; i++) {
+      const o = document.createElement("div");
+      o.className = "login-orb";
+      const size = 60 + Math.random() * 140;
+      o.style.width = size + "px";
+      o.style.height = size + "px";
+      o.style.left = (Math.random() * 90) + "%";
+      o.style.top = (Math.random() * 90) + "%";
+      o.style.background = colors[i % colors.length];
+      o.style.animationDuration = (10 + Math.random() * 10) + "s";
+      o.style.animationDelay = (-Math.random() * 8) + "s";
+      orbWrap.appendChild(o);
+    }
+    const steamWrap = document.getElementById("steamWrap");
+    for (let i = 0; i < 4; i++) {
+      const s = document.createElement("div");
+      s.className = "steam";
+      s.style.left = (40 + i * 18) + "px";
+      s.style.animationDelay = (i * 1.3) + "s";
+      s.style.animationDuration = (4.5 + Math.random()) + "s";
+      steamWrap.appendChild(s);
+    }
+  }
+
+  function setLoginPane(pane) {
+    document.querySelectorAll(".login-tab").forEach(t => t.classList.toggle("active", t.dataset.pane === pane));
+    document.querySelectorAll(".login-pane").forEach(p => p.classList.toggle("active", p.dataset.pane === pane));
+    document.getElementById("loginTabSlider").classList.toggle("owner-pos", pane === "owner");
+  }
+
+  function fieldError(groupId, errorId, msg) {
+    const group = document.getElementById(groupId);
+    const err = document.getElementById(errorId);
+    group.classList.add("err");
+    err.textContent = msg;
+    err.classList.add("show");
+    setTimeout(() => group.classList.remove("err"), 420);
+  }
+  function clearFieldError(groupId, errorId) {
+    document.getElementById(groupId).classList.remove("err");
+    const err = document.getElementById(errorId);
+    err.classList.remove("show");
+    err.textContent = "";
+  }
+
+  function hideLoginScreen() {
+    document.getElementById("loginScreen").classList.add("hidden");
+    document.getElementById("appRoot").classList.add("revealed");
+    updateOwnerUI();
+  }
+  function showLoginScreen() {
+    document.getElementById("loginScreen").classList.remove("hidden");
+  }
+
+  function submitStaffLogin(e) {
+    e.preventDefault();
+    clearFieldError("staffNameGroup", "staffError");
+    const name = document.getElementById("staffName").value.trim();
+    const pin = document.getElementById("staffPin").value.trim();
+
+    if (!name) {
+      fieldError("staffNameGroup", "staffError", "Please enter your name to start the shift.");
+      return;
+    }
+    if (pin !== STAFF_PIN) {
+      fieldError("staffPinGroup", "staffError", "Incorrect PIN. Ask the owner if you're not sure.");
+      return;
+    }
+    const btn = document.getElementById("staffSubmit");
+    btn.classList.add("loading");
+    setTimeout(() => {
+      btn.classList.remove("loading");
+      authState = { role: "staff", name: name };
+      saveAuth();
+      hideLoginScreen();
+      showToast(`Welcome, ${name} — counter is open`);
+    }, 450);
+  }
+
+  function submitOwnerLogin(e) {
+    e.preventDefault();
+    clearFieldError("ownerUserGroup", "ownerError");
+    const user = document.getElementById("ownerUser").value.trim();
+    const pass = document.getElementById("ownerPass").value;
+
+    if (user.toLowerCase() !== OWNER_USERNAME.toLowerCase() || pass !== OWNER_PASSWORD) {
+      fieldError("ownerPassGroup", "ownerError", "Username or password is incorrect.");
+      return;
+    }
+    const btn = document.getElementById("ownerSubmit");
+    btn.classList.add("loading");
+    setTimeout(() => {
+      btn.classList.remove("loading");
+      authState = { role: "owner", name: "Owner" };
+      saveAuth();
+      hideLoginScreen();
+      showToast("Owner panel unlocked");
+    }, 500);
+  }
+
+  function initLoginScreen() {
+    buildLoginDecor();
+
+    document.getElementById("tabStaff").addEventListener("click", () => setLoginPane("staff"));
+    document.getElementById("tabOwner").addEventListener("click", () => setLoginPane("owner"));
+
+    document.getElementById("paneStaff").addEventListener("submit", submitStaffLogin);
+    document.getElementById("paneOwner").addEventListener("submit", submitOwnerLogin);
+
+    document.querySelectorAll(".pw-toggle").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const target = document.getElementById(btn.dataset.target);
+        const showing = target.type === "text";
+        target.type = showing ? "password" : "text";
+        btn.textContent = showing ? "SHOW" : "HIDE";
+      });
+    });
+
+    document.getElementById("guestSkipBtn").addEventListener("click", () => {
+      authState = { role: null, name: "" };
+      saveAuth();
+      hideLoginScreen();
+      showToast("Browsing as guest — sign in anytime to manage orders");
+    });
+
+    // if already authenticated from a previous session, skip straight in
+    if (authState.role === "staff" || authState.role === "owner") {
+      hideLoginScreen();
+    }
+  }
+
+  /* ======================= OWNER MODE (post-login) ======================= */
+  function isOwner() {
+    return authState.role === "owner";
+  }
+
+  function updateOwnerUI() {
+    const btn = document.getElementById("ownerToggleBtn");
+    const label = document.getElementById("ownerBtnLabel");
+    const sub = document.getElementById("brandSub");
+
+    if (isOwner()) {
+      btn.classList.add("is-active");
+      label.textContent = "Log Out (Owner)";
+      sub.textContent = "Owner Mode — editing menu";
+    } else if (authState.role === "staff") {
+      btn.classList.remove("is-active");
+      label.textContent = "Owner Login";
+      sub.textContent = `Order Counter · ${authState.name}`;
+    } else {
+      btn.classList.remove("is-active");
+      label.textContent = "Owner Login";
+      sub.textContent = "Order Counter";
+    }
+    renderOwnerBanner();
+    renderMenu();
+  }
+
+  function renderOwnerBanner() {
+    const wrap = document.getElementById("ownerBannerWrap");
+    if (!isOwner()) { wrap.innerHTML = ""; return; }
+    wrap.innerHTML = `
+      <div class="owner-banner">
+        <div class="ob-text"><span class="ob-dot"></span> Owner mode is on — tap the pencil on any item to edit name, price &amp; stock, or add a new item below.</div>
+        <button id="ownerAddQuickBtn">+ New Item</button>
+      </div>`;
+    document.getElementById("ownerAddQuickBtn").addEventListener("click", () => {
+      if (currentCat === "All") { currentCat = CATEGORY_ORDER[1]; renderCatTabs(); }
+      renderMenu();
+      const el = document.querySelector(".owner-add-card");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+
+  document.getElementById("ownerToggleBtn").addEventListener("click", () => {
+    if (isOwner()) {
+      if (!confirm("Log out of owner mode?")) return;
+      authState = { role: "staff", name: authState.name || "" };
+      saveAuth();
+      editingItemId = null;
+      updateOwnerUI();
+      showToast("Owner mode off");
+    } else {
+      showLoginScreen();
+      setLoginPane("owner");
+    }
+  });
+
+  /* ======================= OWNER: EDIT / ADD / DELETE ITEMS ======================= */
+  function startEditItem(id) {
+    editingItemId = id;
+    renderMenu();
+    setTimeout(() => {
+      const card = document.querySelector(`.item-card[data-item-id="${id}"] .oe-name-input`);
+      if (card) card.focus();
+    }, 30);
+  }
+  function stopEditItem() {
+    editingItemId = null;
+    renderMenu();
+  }
+
+  function commitItemEdit(id, nameVal, priceVal, inStockVal, hintEl) {
+    const item = getItem(id);
+    if (!item) return;
+    const newName = nameVal.trim();
+    const newPrice = parseFloat(priceVal);
+
+    if (!newName) { showToast("Item name can't be empty"); return; }
+    if (!item.mrp && (isNaN(newPrice) || newPrice < 0)) { showToast("Enter a valid price"); return; }
+
+    item.name = newName;
+    if (!item.mrp) item.price = newPrice;
+    item.stock = inStockVal;
+    saveMenu();
+
+    if (hintEl) {
+      hintEl.classList.add("show");
+      setTimeout(() => { hintEl.classList.remove("show"); }, 900);
+    }
+    renderMenu();
+    renderTicket();
+  }
+
+  function deleteMenuItem(id) {
+    const item = getItem(id);
+    if (!item) return;
+    if (!confirm(`Remove "${item.name}" from the menu? This can't be undone.`)) return;
+    MENU = MENU.filter(m => m.id !== id);
+    delete cart[id];
+    delete itemImages[id];
+    saveMenu();
+    saveImages();
+    editingItemId = null;
+    renderMenu();
+    renderTicket();
+    showToast(`Removed ${item.name}`);
+  }
+
+  function addNewMenuItem(cat) {
+    const newId = "new" + Date.now().toString(36);
+    const newItem = { id: newId, cat: cat, name: "New Item", desc: "Tap the pencil to edit this item.", price: 0, stock: true, img: null };
+    MENU.push(newItem);
+    saveMenu();
+    editingItemId = newId;
+    renderMenu();
+    setTimeout(() => {
+      const el = document.querySelector(`.item-card[data-item-id="${newId}"] .oe-name-input`);
+      if (el) { el.focus(); el.select(); }
+    }, 30);
+  }
+
   /* ======================= IMAGE UPLOAD ======================= */
   function handleImageUpload(itemId, file) {
     if (!file || !file.type.startsWith("image/")) {
@@ -1441,13 +2387,6 @@
       img.src = e.target.result;
     };
     reader.readAsDataURL(file);
-  }
-
-  function removeItemImage(itemId) {
-    delete itemImages[itemId];
-    saveImages();
-    renderMenu();
-    showToast("Photo removed");
   }
 
   /* ======================= RENDER: CATEGORY TABS ======================= */
@@ -1479,7 +2418,7 @@
       return matchesCat && matchesQuery;
     });
 
-    if (items.length === 0) {
+    if (items.length === 0 && !(isOwner() && currentCat !== "All")) {
       container.innerHTML = '<div class="empty-menu">No items match your search. Try a different word, or clear the search box.</div>';
       return;
     }
@@ -1490,7 +2429,11 @@
       groups[it.cat].push(it);
     });
 
-    const catsToShow = CATEGORY_ORDER.filter(c => c !== "All" && groups[c]);
+    let catsToShow = CATEGORY_ORDER.filter(c => c !== "All" && groups[c]);
+    // if owner is on a specific empty category, still show it so they can add the first item
+    if (isOwner() && currentCat !== "All" && !catsToShow.includes(currentCat) && !q) {
+      catsToShow.push(currentCat);
+    }
 
     catsToShow.forEach(cat => {
       const section = document.createElement("div");
@@ -1498,7 +2441,8 @@
 
       const head = document.createElement("div");
       head.className = "menu-section-head";
-      head.innerHTML = `<h2>${cat}</h2><span class="count">${groups[cat].length} item${groups[cat].length !== 1 ? "s" : ""}</span>`;
+      const n = (groups[cat] || []).length;
+      head.innerHTML = `<h2>${cat}</h2><span class="count">${n} item${n !== 1 ? "s" : ""}</span>`;
       section.appendChild(head);
 
       if (cat === "Grab N Go") {
@@ -1511,9 +2455,19 @@
       const grid = document.createElement("div");
       grid.className = "menu-grid";
 
-      groups[cat].forEach(item => {
-        grid.appendChild(renderItemCard(item));
+      (groups[cat] || []).forEach((item, idx) => {
+        const c = renderItemCard(item);
+        c.style.animationDelay = (idx * 0.02) + "s";
+        grid.appendChild(c);
       });
+
+      if (isOwner() && !q) {
+        const addCard = document.createElement("div");
+        addCard.className = "item-card owner-add-card";
+        addCard.innerHTML = `<div class="oac-plus">+</div><div>Add item to<br>${cat}</div>`;
+        addCard.addEventListener("click", () => addNewMenuItem(cat));
+        grid.appendChild(addCard);
+      }
 
       section.appendChild(grid);
       container.appendChild(section);
@@ -1523,6 +2477,9 @@
   function renderItemCard(item) {
     const card = document.createElement("div");
     card.className = "item-card";
+    card.dataset.itemId = item.id;
+    if (editingItemId === item.id) card.classList.add("owner-editing");
+    if (!item.stock) card.classList.add("out-of-stock-card");
 
     const qty = cart[item.id] || 0;
     const outOfStock = !item.stock;
@@ -1542,6 +2499,13 @@
         </div>`;
     }
 
+    if (isOwner() && !item.stock) {
+      const flag = document.createElement("div");
+      flag.className = "owner-stock-flag";
+      flag.textContent = "Out of stock";
+      imgSlot.appendChild(flag);
+    }
+
     const uploadBtn = document.createElement("label");
     uploadBtn.className = "img-upload-btn";
     uploadBtn.title = savedImg ? "Change photo" : "Upload photo";
@@ -1557,6 +2521,19 @@
     });
     uploadBtn.appendChild(fileInput);
     imgSlot.appendChild(uploadBtn);
+
+    if (isOwner()) {
+      const editToggle = document.createElement("button");
+      editToggle.type = "button";
+      editToggle.className = "owner-edit-toggle" + (editingItemId === item.id ? " active" : "");
+      editToggle.title = editingItemId === item.id ? "Close editor" : "Edit this item";
+      editToggle.textContent = editingItemId === item.id ? "✕" : "✎";
+      editToggle.addEventListener("click", () => {
+        if (editingItemId === item.id) stopEditItem();
+        else startEditItem(item.id);
+      });
+      imgSlot.appendChild(editToggle);
+    }
 
     card.appendChild(imgSlot);
 
@@ -1593,8 +2570,62 @@
 
     card.appendChild(body);
 
+    if (isOwner() && editingItemId === item.id) {
+      const editRow = document.createElement("div");
+      editRow.className = "owner-edit-row";
+      editRow.innerHTML = `
+        <div class="oe-line">
+          <label>Name</label>
+          <input type="text" class="oe-name-input" value="${item.name.replace(/"/g, "&quot;")}">
+        </div>
+        ${item.mrp ? "" : `
+        <div class="oe-line">
+          <label>Price</label>
+          <input type="number" class="oe-price-input" min="0" step="1" value="${item.price}">
+        </div>`}
+        <div class="oe-line stock-toggle ${item.stock ? "is-in" : ""}" tabindex="0" role="switch" aria-checked="${item.stock}">
+          <div class="stock-switch ${item.stock ? "in-stock" : ""}"></div>
+          <span class="st-label">${item.stock ? "In stock" : "Out of stock"}</span>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <button type="button" class="oe-delete-btn">Delete item</button>
+          <span class="oe-save-hint">Saved ✓</span>
+        </div>
+      `;
+      card.appendChild(editRow);
+
+      const nameInput = editRow.querySelector(".oe-name-input");
+      const priceInput = editRow.querySelector(".oe-price-input");
+      const stockToggle = editRow.querySelector(".stock-toggle");
+      const hint = editRow.querySelector(".oe-save-hint");
+      let stockVal = item.stock;
+
+      function pushCommit() {
+        commitItemEdit(item.id, nameInput.value, priceInput ? priceInput.value : "0", stockVal, hint);
+      }
+
+      nameInput.addEventListener("blur", pushCommit);
+      nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); nameInput.blur(); } });
+      if (priceInput) {
+        priceInput.addEventListener("blur", pushCommit);
+        priceInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); priceInput.blur(); } });
+      }
+      function toggleStock() {
+        stockVal = !stockVal;
+        stockToggle.classList.toggle("is-in", stockVal);
+        stockToggle.setAttribute("aria-checked", stockVal);
+        stockToggle.querySelector(".stock-switch").classList.toggle("in-stock", stockVal);
+        stockToggle.querySelector(".st-label").textContent = stockVal ? "In stock" : "Out of stock";
+        pushCommit();
+      }
+      stockToggle.addEventListener("click", toggleStock);
+      stockToggle.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleStock(); } });
+
+      editRow.querySelector(".oe-delete-btn").addEventListener("click", () => deleteMenuItem(item.id));
+    }
+
     const addBtn = body.querySelector(".add-btn");
-    if (addBtn) addBtn.addEventListener("click", () => addToCart(item.id));
+    if (addBtn) addBtn.addEventListener("click", () => addToCart(item.id, addBtn));
     const dec = body.querySelector(".q-dec");
     const inc = body.querySelector(".q-inc");
     if (dec) dec.addEventListener("click", () => changeQty(item.id, -1));
@@ -1604,10 +2635,11 @@
   }
 
   /* ======================= CART ACTIONS ======================= */
-  function addToCart(id) {
+  function addToCart(id, btnEl) {
     const item = getItem(id);
     if (!item || !item.stock || item.mrp) return;
     cart[id] = (cart[id] || 0) + 1;
+    if (btnEl) { btnEl.classList.add("pop"); setTimeout(() => btnEl.classList.remove("pop"), 350); }
     renderMenu();
     renderTicket();
     showToast(`Added ${item.name}`);
@@ -1644,6 +2676,7 @@
   }
 
   /* ======================= RENDER: TICKET ======================= */
+  let lastTotal = 0;
   function renderTicket() {
     document.getElementById("ticketNum").textContent = pad4(orderCounter);
 
@@ -1687,7 +2720,13 @@
     const bill = computeBill();
     document.getElementById("sumSubtotal").textContent = fmt(bill.subtotal);
     document.getElementById("sumTax").textContent = fmt(bill.tax);
-    document.getElementById("sumTotal").textContent = fmt(bill.total);
+    const totalEl = document.getElementById("sumTotal");
+    totalEl.textContent = fmt(bill.total);
+    if (bill.total !== lastTotal) {
+      totalEl.classList.add("bump");
+      setTimeout(() => totalEl.classList.remove("bump"), 300);
+      lastTotal = bill.total;
+    }
 
     const discRow = document.getElementById("sumDiscountRow");
     if (appliedDiscount && bill.discount > 0) {
@@ -1750,7 +2789,8 @@
       tax: bill.tax,
       total: bill.total,
       status: "Confirmed",
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      takenBy: authState.name || "Guest"
     };
 
     orderHistory.unshift(order);
@@ -1987,10 +3027,12 @@
   /* ======================= INIT ======================= */
   function init() {
     loadState();
+    initLoginScreen();
     renderCatTabs();
     renderMenu();
     renderTicket();
     renderHistoryStats();
+    updateOwnerUI();
 
     const isMobile = window.innerWidth <= 880;
     document.getElementById("mobileCartBtn").style.display = isMobile ? "flex" : "none";
