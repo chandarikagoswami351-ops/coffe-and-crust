@@ -2,17 +2,25 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title> THE Coffee & Crust — Order Counter</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>The Coffee and Crust — Order Counter</title>
+<meta name="theme-color" content="#2c5f8a">
+<meta name="description" content="Order counter for The Coffee and Crust cafe">
+<link rel="apple-touch-icon" href="LOGO_DATA_URI">
+<link rel="icon" href="LOGO_DATA_URI">
+<link rel="manifest" href="data:application/manifest+json;base64,MANIFEST_B64">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Coffee & Crust">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --white: #efe9e9;
+    --white: #ffffff;
     --panel: #f0f8ff;
     --panel-2: #e4f1fc;
-    --sky: #4d2f22;
-    --sky-deep: #4d2f22;
+    --sky: #4a90d9;
+    --sky-deep: #2c5f8a;
     --espresso: #3d2b1f;
     --crust: #e8967a;
     --crust-soft: #f6d9cc;
@@ -23,9 +31,11 @@
     --danger: #c9564a;
     --shadow: 0 10px 30px -12px rgba(44, 95, 138, 0.25);
     --radius: 14px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
   html, body {
     margin: 0;
@@ -34,6 +44,7 @@
     color: var(--ink);
     font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
   }
 
   h1, h2, h3, .display {
@@ -68,7 +79,7 @@
     z-index: 40;
     background: var(--white);
     border-bottom: 1px solid var(--line);
-    padding: 14px 22px;
+    padding: calc(14px + var(--safe-top)) 22px 14px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -78,37 +89,46 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
   }
   .brand-mark {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    background: radial-gradient(circle at 32% 30%, var(--crust-soft), var(--crust) 60%, var(--espresso) 130%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Fraunces', serif;
-    font-weight: 700;
-    color: var(--white);
-    font-size: 18px;
     flex-shrink: 0;
-    box-shadow: inset 0 -3px 6px rgba(0,0,0,0.25);
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    border: 1px solid var(--line);
   }
-  .brand-text h1 { font-size: 21px; font-weight: 700; line-height: 1.1; }
+  .brand-mark img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .brand-text { min-width: 0; }
+  .brand-text h1 {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .brand-text span {
     display: block;
-    font-size: 11px;
+    font-size: 10.5px;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--sky-deep);
     font-weight: 600;
-    margin-top: 3px;
+    margin-top: 2px;
   }
 
   .topbar-actions {
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-shrink: 0;
   }
   .pill-btn {
     padding: 9px 16px;
@@ -133,25 +153,13 @@
   }
   .pill-solid:hover { background: #234c70; }
 
-  .view-toggle {
+  .install-btn {
     display: none;
-    gap: 6px;
-    background: var(--panel);
-    padding: 4px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-  }
-  .view-toggle button {
-    padding: 7px 14px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--sky-deep);
-  }
-  .view-toggle button.active {
-    background: var(--sky-deep);
+    background: var(--crust);
     color: var(--white);
   }
+  .install-btn.show { display: flex; }
+  .install-btn:hover { background: #d97f5f; }
 
   /* ---------- Layout ---------- */
   .app {
@@ -169,8 +177,8 @@
   }
   .order-side {
     position: sticky;
-    top: 65px;
-    height: calc(100vh - 65px);
+    top: 73px;
+    height: calc(100vh - 73px);
     background: var(--panel);
     border-left: 1px solid var(--line);
     padding: 22px 20px 20px;
@@ -239,6 +247,12 @@
     color: var(--ink-soft);
     font-family: 'JetBrains Mono', monospace;
   }
+  .menu-section-note {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin: -8px 0 14px;
+    font-style: italic;
+  }
 
   .menu-grid {
     display: grid;
@@ -250,10 +264,9 @@
     background: var(--white);
     border: 1px solid var(--line);
     border-radius: var(--radius);
-    padding: 16px;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    gap: 10px;
     transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
     position: relative;
   }
@@ -261,6 +274,69 @@
     box-shadow: var(--shadow);
     border-color: var(--sky);
     transform: translateY(-2px);
+  }
+
+  /* ---------- Image slot ---------- */
+  .item-img-slot {
+    width: 100%;
+    height: 120px;
+    background: var(--panel);
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .item-img-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .img-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: linear-gradient(135deg, var(--panel) 0%, var(--panel-2) 100%);
+    color: var(--ink-soft);
+  }
+  .img-placeholder .icon-glyph { font-size: 22px; opacity: 0.55; }
+  .img-placeholder .add-photo-txt {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.7;
+  }
+  .img-upload-btn {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(44, 95, 138, 0.88);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    backdrop-filter: blur(2px);
+    transition: background 0.15s ease, transform 0.1s ease;
+    z-index: 2;
+  }
+  .img-upload-btn:hover { background: var(--sky-deep); transform: scale(1.06); }
+  .img-upload-btn:active { transform: scale(0.94); }
+  .item-img-slot input[type="file"] { display: none; }
+
+  .item-card-body {
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
   }
   .item-top {
     display: flex;
@@ -271,12 +347,12 @@
   .item-name {
     font-family: 'Fraunces', serif;
     font-weight: 600;
-    font-size: 16px;
+    font-size: 15.5px;
     color: var(--espresso);
     line-height: 1.25;
   }
   .item-desc {
-    font-size: 12.5px;
+    font-size: 12px;
     color: var(--ink-soft);
     line-height: 1.45;
     flex: 1;
@@ -391,6 +467,7 @@
     background: var(--white);
     font-size: 13.5px;
     color: var(--ink);
+    width: 100%;
   }
   .customer-fields input::placeholder { color: #a9bccb; }
 
@@ -551,7 +628,6 @@
     color: var(--sky-deep);
   }
 
-  /* coffee ring watermark — signature detail */
   .bill-summary::after {
     content: "";
     position: absolute;
@@ -576,6 +652,7 @@
     border: 1px solid var(--line);
     font-size: 12.5px;
     font-family: 'JetBrains Mono', monospace;
+    min-width: 0;
   }
   .discount-row button {
     padding: 8px 13px;
@@ -584,6 +661,7 @@
     color: var(--sky-deep);
     font-size: 12px;
     font-weight: 700;
+    flex-shrink: 0;
   }
 
   .confirm-btn {
@@ -620,7 +698,7 @@
   /* ---------- Toast ---------- */
   .toast {
     position: fixed;
-    bottom: 26px;
+    bottom: calc(26px + var(--safe-bottom));
     left: 50%;
     transform: translateX(-50%) translateY(12px);
     background: var(--espresso);
@@ -637,6 +715,8 @@
     display: flex;
     align-items: center;
     gap: 9px;
+    max-width: 90vw;
+    text-align: center;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
   .toast .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--crust); flex-shrink: 0; }
@@ -701,9 +781,10 @@
     font-size: 13px;
     padding: 6px 0;
     border-bottom: 1px dashed var(--line);
+    gap: 10px;
   }
   .receipt-line .rname { color: var(--ink); }
-  .receipt-line .rval { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+  .receipt-line .rval { font-family: 'JetBrains Mono', monospace; font-weight: 600; flex-shrink: 0; }
   .receipt-total-row {
     display: flex;
     justify-content: space-between;
@@ -752,6 +833,7 @@
     transition: right 0.25s ease;
     display: flex;
     flex-direction: column;
+    padding-top: var(--safe-top);
   }
   .history-panel.show { right: 0; }
   .history-head {
@@ -807,6 +889,7 @@
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 8px;
+    gap: 8px;
   }
   .horder-id { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: var(--sky-deep); }
   .horder-time { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
@@ -817,6 +900,7 @@
     letter-spacing: 0.04em;
     padding: 3px 9px;
     border-radius: 999px;
+    flex-shrink: 0;
   }
   .status-confirmed { background: #e8f5ec; color: var(--good); }
   .status-preparing { background: #fff4e0; color: #b9770e; }
@@ -878,7 +962,7 @@
     right: 0;
     background: var(--sky-deep);
     color: var(--white);
-    padding: 14px 20px;
+    padding: 14px 20px calc(14px + var(--safe-bottom));
     align-items: center;
     justify-content: space-between;
     z-index: 50;
@@ -914,13 +998,13 @@
       z-index: 80;
       transition: right 0.25s ease;
       box-shadow: -20px 0 50px -20px rgba(0,0,0,0.3);
+      padding-top: calc(22px + var(--safe-top));
     }
     .order-side.show { right: 0; }
-    .view-toggle { display: none !important; }
     .menu-side { padding-bottom: 90px; }
     .mobile-order-bar.visible { display: flex; }
-    .brand-text h1 { font-size: 18px; }
-    .topbar { padding: 12px 16px; }
+    .brand-text h1 { font-size: 17px; max-width: 46vw; }
+    .topbar { padding: calc(12px + var(--safe-top)) 14px 12px; }
     .pill-btn span.txt { display: none; }
     .pill-btn { padding: 9px 12px; }
   }
@@ -928,6 +1012,11 @@
   @media (max-width: 480px) {
     .menu-grid { grid-template-columns: 1fr 1fr; }
     .menu-side { padding: 18px 14px 90px; }
+    .item-img-slot { height: 96px; }
+  }
+
+  @media (min-width: 881px) {
+    .mobile-order-bar { display: none !important; }
   }
 </style>
 </head>
@@ -935,13 +1024,16 @@
 
 <div class="topbar">
   <div class="brand">
-    <div class="brand-mark"><img src="" alt="logo"></div>
+    <div class="brand-mark"><img src="LOGO_DATA_URI" alt="The Coffee and Crust logo"></div>
     <div class="brand-text">
-      <h1> THE COFFEE & CRUST CAFE</h1>
+      <h1>The Coffee and Crust</h1>
       <span>Order Counter</span>
     </div>
   </div>
   <div class="topbar-actions">
+    <button class="pill-btn install-btn" id="installBtn">
+      <span>⬇</span><span class="txt">Install App</span>
+    </button>
     <button class="pill-btn pill-ghost" id="historyBtn">
       <span>📋</span><span class="txt">Orders</span>
     </button>
@@ -956,7 +1048,7 @@
   <!-- MENU -->
   <div class="menu-side">
     <div class="search-row">
-      <input type="text" class="search-input" id="searchInput" placeholder="Search the menu — e.g. latte, croissant, sourdough...">
+      <input type="text" class="search-input" id="searchInput" placeholder="Search the menu — e.g. pizza, coffee, sandwich...">
     </div>
     <div class="cat-tabs" id="catTabs"></div>
     <div id="menuSections"></div>
@@ -1072,42 +1164,156 @@
 (function() {
   "use strict";
 
-  /* ======================= MENU DATA ======================= */
+  /* ======================= MENU DATA (from your printed menu) ======================= */
   const MENU = [
-    { id: "c1", cat: "HOT BEVERAGES", name: "Hot Coffe", desc: "Double shot, tight crema, no water added.", price: 30, stock: true },
-    { id: "c2", cat: "HOT BEVERAGES", name: "Masala Tea ", desc: "Espresso lengthened with hot water.", price: 20, stock: true },
-    { id: "c3", cat: "HOT BEVERAGES", name: "Hot Lemon Tea ", desc: "Equal parts espresso, steamed milk, and foam.", price: 30, stock: true },
-    { id: "c4", cat: "HOT BEVERAGES", name: "Espresso (Black Coffee)", desc: "Silky steamed milk over a smooth espresso base.", price: 40, stock: true },
-    { id: "c5", cat: "HOT BEVERAGES", name: "Americano", desc: "Ristretto shots with velvety micro-foam.", price: 40, stock: true },
-    { id: "c6", cat: "HOT BEVERAGES", name: "Cappuccino", desc: "Espresso, steamed milk, and real dark chocolate.", price: 50, stock: true },
-    { id: "c7", cat: "HOT BEVERAGES", name: "Cafe Latte ", desc: "Vanilla, steamed milk, espresso, caramel drizzle.", price: 50, stock: true },
-    { id: "c8", cat: "HOT BEVERAGES", name: "Cafe Mocha ", desc: "Steeped 18 hours — smooth, low-acid, over ice.", price: 50, stock: true },
-    { id: "c9", cat: "HOT BEVERAGES", name: "Hot Chocolate", desc: "Chilled espresso and cold milk over ice.", price: 50, stock: false },
-    { id: "c10", cat: "HOT BEVERAGES", name: "Irish Cappuccino", desc: "A shot of hot espresso poured over vanilla gelato.", price: 60, stock: true },
-    { id: "c11", cat: "HOT BEVERAGES", name: "Hazelnut Cappuccino", desc: "Double shot, tight crema, no water added.", price: 60, stock: true },
-    { id: "c12", cat: "HOT BEVERAGES", name: "Caramel Cappuccino", desc: "Double shot, tight crema, no water added.", price: 60, stock: true },
+    // ---- PIZZA (8 Inches) ----
+    { id: "pz1", cat: "Pizza (8 Inch)", name: "Margarita Pizza", desc: "Classic tomato base with mozzarella.", price: 130, stock: true, img: null },
+    { id: "pz2", cat: "Pizza (8 Inch)", name: "Italian Pizza", desc: "Herb-loaded tomato base, Italian seasoning.", price: 150, stock: true, img: null },
+    { id: "pz3", cat: "Pizza (8 Inch)", name: "American Corn Pizza", desc: "Sweet corn over a cheesy tomato base.", price: 140, stock: true, img: null },
+    { id: "pz4", cat: "Pizza (8 Inch)", name: "Paneer Pizza", desc: "Loaded with soft paneer cubes and cheese.", price: 170, stock: true, img: null },
+    { id: "pz5", cat: "Pizza (8 Inch)", name: "Onion Corn Pizza", desc: "Onion and sweet corn on a cheese base.", price: 150, stock: true, img: null },
+    { id: "pz6", cat: "Pizza (8 Inch)", name: "Nescafe Special Pizza", desc: "Our house-special loaded pizza.", price: 180, stock: true, img: null },
 
-    { id: "b1", cat: "Bakery & Crust", name: "Butter Croissant", desc: "Laminated 27 times, baked fresh each morning.", price: 95, stock: true },
-    { id: "b2", cat: "Bakery & Crust", name: "Sourdough Loaf Slice", desc: "72-hour fermented crust, toasted to order.", price: 80, stock: true },
-    { id: "b3", cat: "Bakery & Crust", name: "Cheese & Herb Focaccia", desc: "Olive-oil crust with rosemary and sea salt.", price: 120, stock: true },
-    { id: "b4", cat: "Bakery & Crust", name: "Almond Danish", desc: "Flaky pastry crust with almond cream filling.", price: 110, stock: true },
-    { id: "b5", cat: "Bakery & Crust", name: "Cinnamon Roll", desc: "Soft-baked swirl with brown-butter glaze.", price: 105, stock: true },
-    { id: "b6", cat: "Bakery & Crust", name: "Garlic Bread Crostini", desc: "Crisp-crust baguette, roasted garlic butter.", price: 90, stock: true },
-    { id: "b7", cat: "Bakery & Crust", name: "Blueberry Muffin", desc: "Crumb-topped, packed with real blueberries.", price: 85, stock: true },
-    { id: "b8", cat: "Bakery & Crust", name: "Chocolate Chip Cookie", desc: "Crisp edge, molten center, sea-salt finish.", price: 60, stock: true },
+    // ---- BURGERS ----
+    { id: "bg1", cat: "Burgers", name: "Aloo Tikkie Burger", desc: "Crisp potato tikki patty, fresh veggies.", price: 70, stock: true, img: null },
+    { id: "bg2", cat: "Burgers", name: "Veg. Cheese Burger", desc: "Veg patty with melted cheese and veggies.", price: 90, stock: true, img: null },
+    { id: "bg3", cat: "Burgers", name: "Schezwan Burger", desc: "Spicy schezwan-tossed patty burger.", price: 100, stock: true, img: null },
+    { id: "bg4", cat: "Burgers", name: "Paneer Burger", desc: "Grilled paneer patty with fresh salad.", price: 100, stock: true, img: null },
 
-    { id: "s1", cat: "Savoury", name: "Grilled Cheese Sandwich", desc: "Sourdough crust, three-cheese blend, buttered.", price: 150, stock: true },
-    { id: "s2", cat: "Savoury", name: "Veg Club Sandwich", desc: "Triple-decker with fresh veg and herb mayo.", price: 160, stock: true },
-    { id: "s3", cat: "Savoury", name: "Cheese & Corn Puff Pastry", desc: "Flaky crust parcel, molten cheese-corn filling.", price: 95, stock: true },
-    { id: "s4", cat: "Savoury", name: "Quiche Slice", desc: "Buttery crust, egg custard, seasonal veg.", price: 140, stock: false },
+    // ---- FRENKIES ----
+    { id: "fr1", cat: "Frenkies", name: "Aloo Tikki Cheese Frankie", desc: "Rolled aloo tikki with melted cheese.", price: 100, stock: true, img: null },
+    { id: "fr2", cat: "Frenkies", name: "Tandoori Paneer Frankie", desc: "Tandoori-spiced paneer, rolled fresh.", price: 120, stock: true, img: null },
+    { id: "fr3", cat: "Frenkies", name: "Schezwan Frankie", desc: "Spicy schezwan filling in a soft roll.", price: 120, stock: true, img: null },
+    { id: "fr4", cat: "Frenkies", name: "Nescafe Special Frankie", desc: "Our house-special loaded frankie roll.", price: 150, stock: true, img: null },
 
-    { id: "d1", cat: "Cold & Other", name: "Iced Tea", desc: "House-brewed, lightly sweetened, over ice.", price: 100, stock: true },
-    { id: "d2", cat: "Cold & Other", name: "Fresh Lemonade", desc: "Hand-squeezed lemons, mint, soda top.", price: 95, stock: true },
-    { id: "d3", cat: "Cold & Other", name: "Hot Chocolate", desc: "Steamed milk with real melted dark chocolate.", price: 145, stock: true },
-    { id: "d4", cat: "Cold & Other", name: "Masala Chai", desc: "Slow-brewed with whole spices and milk.", price: 70, stock: true }
+    // ---- BROWNIES ----
+    { id: "br1", cat: "Brownies", name: "Hot Sizzling Brownie", desc: "Warm fudgy brownie, served sizzling.", price: 100, stock: true, img: null },
+    { id: "br2", cat: "Brownies", name: "Hot Sizzling Brownie With Ice Cream", desc: "Sizzling brownie topped with ice cream.", price: 130, stock: true, img: null },
+
+    // ---- BREAKFAST ----
+    { id: "bf1", cat: "Breakfast", name: "Samosa (2pcs)", desc: "Crisp golden samosas, two pieces.", price: 35, stock: true, img: null },
+    { id: "bf2", cat: "Breakfast", name: "Maska Bun", desc: "Soft bun loaded with butter.", price: 35, stock: true, img: null },
+    { id: "bf3", cat: "Breakfast", name: "Maska Bun With Jam", desc: "Buttered bun with a swipe of jam.", price: 40, stock: true, img: null },
+    { id: "bf4", cat: "Breakfast", name: "Chocolate Maska Bun", desc: "Buttered bun with chocolate spread.", price: 50, stock: true, img: null },
+
+    // ---- FRENCH FRIES (120gms, Freshly Fried) ----
+    { id: "ff1", cat: "French Fries", name: "Salted French Fries", desc: "Freshly fried, lightly salted (120g).", price: 80, stock: true, img: null },
+    { id: "ff2", cat: "French Fries", name: "Masala-ae-Magic French Fries", desc: "Fries tossed in our special masala (120g).", price: 90, stock: true, img: null },
+    { id: "ff3", cat: "French Fries", name: "Peri Peri French Fries", desc: "Fries tossed in peri peri seasoning (120g).", price: 90, stock: true, img: null },
+    { id: "ff4", cat: "French Fries", name: "Cheesy French Fries", desc: "Fries loaded with melted cheese (120g).", price: 100, stock: true, img: null },
+
+    // ---- GARLIC BREAD (3pcs) ----
+    { id: "gb1", cat: "Garlic Bread", name: "Garlic Bread (3pcs)", desc: "Toasted bread with garlic butter, 3 pieces.", price: 80, stock: true, img: null },
+    { id: "gb2", cat: "Garlic Bread", name: "Cheese Garlic Bread (3pcs)", desc: "Garlic bread topped with melted cheese.", price: 90, stock: true, img: null },
+    { id: "gb3", cat: "Garlic Bread", name: "Paneer Cheese Garlic Bread (3pcs)", desc: "Garlic bread loaded with paneer and cheese.", price: 100, stock: true, img: null },
+    { id: "gb4", cat: "Garlic Bread", name: "Cheese Chili Toast (3pcs)", desc: "Cheesy toast with a chili kick.", price: 120, stock: true, img: null },
+
+    // ---- QUICK BITES ----
+    { id: "qb1", cat: "Quick Bites", name: "Potato Cheese Shots (8pcs)", desc: "Crisp potato-cheese bites, 8 pieces.", price: 90, stock: true, img: null },
+    { id: "qb2", cat: "Quick Bites", name: "Veggie Fingers (6pcs)", desc: "Crunchy veggie-stuffed fingers, 6 pieces.", price: 90, stock: true, img: null },
+    { id: "qb3", cat: "Quick Bites", name: "Chili Garlic Potato Bites (8pcs)", desc: "Spicy chili-garlic potato bites, 8 pieces.", price: 90, stock: true, img: null },
+    { id: "qb4", cat: "Quick Bites", name: "Cheese Pizza Samosa (6pcs)", desc: "Samosa stuffed with cheesy pizza filling.", price: 100, stock: true, img: null },
+    { id: "qb5", cat: "Quick Bites", name: "Smiley Potato (6pcs)", desc: "Crispy smiley-shaped potato bites, 6 pieces.", price: 90, stock: true, img: null },
+
+    // ---- HOT BEVERAGES (Regular 150ml) ----
+    { id: "hb1", cat: "Hot Beverages", name: "Hot Coffee", desc: "Freshly brewed hot coffee (150ml).", price: 30, stock: true, img: null },
+    { id: "hb2", cat: "Hot Beverages", name: "Masala Tea", desc: "Spiced milk tea, brewed fresh (150ml).", price: 20, stock: true, img: null },
+    { id: "hb3", cat: "Hot Beverages", name: "Hot Lemon Tea", desc: "Light and tangy hot lemon tea (150ml).", price: 30, stock: true, img: null },
+    { id: "hb4", cat: "Hot Beverages", name: "Espresso (Black Coffee)", desc: "Pure black coffee, no milk (150ml).", price: 40, stock: true, img: null },
+    { id: "hb5", cat: "Hot Beverages", name: "Americano", desc: "Espresso lengthened with hot water (150ml).", price: 40, stock: true, img: null },
+    { id: "hb6", cat: "Hot Beverages", name: "Cappuccino", desc: "Espresso, steamed milk and foam (150ml).", price: 50, stock: true, img: null },
+    { id: "hb7", cat: "Hot Beverages", name: "Cafe Latte", desc: "Smooth espresso with steamed milk (150ml).", price: 50, stock: true, img: null },
+    { id: "hb8", cat: "Hot Beverages", name: "Cafe Mocha", desc: "Espresso, milk and real chocolate (150ml).", price: 50, stock: true, img: null },
+    { id: "hb9", cat: "Hot Beverages", name: "Hot Chocolate", desc: "Rich, creamy hot chocolate (150ml).", price: 60, stock: true, img: null },
+    { id: "hb10", cat: "Hot Beverages", name: "Irish Cappuccino", desc: "Cappuccino with an Irish cream twist (150ml).", price: 60, stock: true, img: null },
+    { id: "hb11", cat: "Hot Beverages", name: "Hazelnut Cappuccino", desc: "Cappuccino with hazelnut flavor (150ml).", price: 60, stock: true, img: null },
+    { id: "hb12", cat: "Hot Beverages", name: "Caramel Cappuccino", desc: "Cappuccino with caramel syrup (150ml).", price: 60, stock: true, img: null },
+
+    // ---- COLD BEVERAGES (Large 250ml) ----
+    { id: "cb1", cat: "Cold Beverages", name: "Frappe (Cold Coffee)", desc: "Classic blended cold coffee (250ml).", price: 70, stock: true, img: null },
+    { id: "cb2", cat: "Cold Beverages", name: "Irish Frappe", desc: "Cold coffee with an Irish cream note (250ml).", price: 80, stock: true, img: null },
+    { id: "cb3", cat: "Cold Beverages", name: "Hazelnut Frappe", desc: "Cold coffee blended with hazelnut (250ml).", price: 80, stock: true, img: null },
+    { id: "cb4", cat: "Cold Beverages", name: "Caramel Frappe", desc: "Cold coffee blended with caramel (250ml).", price: 80, stock: true, img: null },
+    { id: "cb5", cat: "Cold Beverages", name: "Frappe Mocha", desc: "Cold coffee blended with chocolate (250ml).", price: 80, stock: true, img: null },
+    { id: "cb6", cat: "Cold Beverages", name: "Cold Chocolate", desc: "Chilled rich chocolate drink (250ml).", price: 85, stock: true, img: null },
+    { id: "cb7", cat: "Cold Beverages", name: "Lemon Ice Tea", desc: "Chilled lemon-flavored iced tea (250ml).", price: 60, stock: true, img: null },
+    { id: "cb8", cat: "Cold Beverages", name: "Mojito Lemon Tea", desc: "Minty mojito-style iced lemon tea (250ml).", price: 60, stock: true, img: null },
+    { id: "cb9", cat: "Cold Beverages", name: "Water Melon Lemon Ice Tea", desc: "Watermelon and lemon iced tea (250ml).", price: 70, stock: true, img: null },
+    { id: "cb10", cat: "Cold Beverages", name: "Peach Lemon Ice Tea", desc: "Peach-infused iced lemon tea (250ml).", price: 70, stock: true, img: null },
+
+    // ---- THICK SHAKES ----
+    { id: "ts1", cat: "Thick Shakes", name: "KitKat Thick Shake", desc: "Creamy shake blended with KitKat.", price: 100, stock: true, img: null },
+    { id: "ts2", cat: "Thick Shakes", name: "Oreo Thick Shake", desc: "Creamy shake loaded with Oreo cookies.", price: 100, stock: true, img: null },
+    { id: "ts3", cat: "Thick Shakes", name: "Mango Thick Shake", desc: "Rich and creamy mango shake.", price: 100, stock: true, img: null },
+    { id: "ts4", cat: "Thick Shakes", name: "Strawberry Thick Shake", desc: "Rich and creamy strawberry shake.", price: 100, stock: true, img: null },
+    { id: "ts5", cat: "Thick Shakes", name: "Chocolate Thick Shake", desc: "Rich and creamy chocolate shake.", price: 100, stock: true, img: null },
+    { id: "ts6", cat: "Thick Shakes", name: "Blueberry Thick Shake", desc: "Rich and creamy blueberry shake.", price: 90, stock: true, img: null },
+    { id: "ts7", cat: "Thick Shakes", name: "Watermelon Shake", desc: "Fresh and light watermelon shake.", price: 80, stock: true, img: null },
+    { id: "ts8", cat: "Thick Shakes", name: "Milk Thick Shake", desc: "Classic creamy milk shake.", price: 80, stock: true, img: null },
+
+    // ---- SELECT MAGGI ----
+    { id: "mg1", cat: "Maggi", name: "Original Masala Maggi", desc: "Classic masala Maggi noodles.", price: 50, stock: true, img: null },
+    { id: "mg2", cat: "Maggi", name: "Atta Maggi", desc: "Whole-wheat Maggi noodles, masala style.", price: 60, stock: true, img: null },
+    { id: "mg3", cat: "Maggi", name: "Double Masala Maggi", desc: "Extra masala for an extra kick.", price: 70, stock: true, img: null },
+    { id: "mg4", cat: "Maggi", name: "Vegetable Maggi", desc: "Maggi loaded with fresh mixed vegetables.", price: 70, stock: true, img: null },
+    { id: "mg5", cat: "Maggi", name: "Peri-Peri Maggi", desc: "Maggi tossed in peri-peri seasoning.", price: 70, stock: true, img: null },
+    { id: "mg6", cat: "Maggi", name: "Schezwan Maggi", desc: "Maggi tossed in spicy schezwan sauce.", price: 70, stock: true, img: null },
+    { id: "mg7", cat: "Maggi", name: "Chilli Masala Maggi", desc: "Extra spicy chilli masala Maggi.", price: 70, stock: true, img: null },
+    { id: "mg8", cat: "Maggi", name: "Tadka Masala Maggi", desc: "Maggi finished with a hot tadka.", price: 70, stock: true, img: null },
+    { id: "mg9", cat: "Maggi", name: "Butter Garlic Maggi", desc: "Maggi tossed in butter and garlic.", price: 70, stock: true, img: null },
+    { id: "mg10", cat: "Maggi", name: "Cheese Masala Maggi", desc: "Masala Maggi topped with melted cheese.", price: 80, stock: true, img: null },
+    { id: "mg11", cat: "Maggi", name: "Cheese Garlic Maggi", desc: "Garlic Maggi topped with melted cheese.", price: 80, stock: true, img: null },
+    { id: "mg12", cat: "Maggi", name: "Mushroom Olive Maggi", desc: "Maggi with mushroom and olives.", price: 70, stock: true, img: null },
+    { id: "mg13", cat: "Maggi", name: "Capsicum Corn Maggi", desc: "Maggi with capsicum and sweet corn.", price: 70, stock: true, img: null },
+
+    // ---- PASTA ----
+    { id: "ps1", cat: "Pasta", name: "White Sauce Cheese Macaroni Pasta", desc: "Creamy white sauce pasta with cheese.", price: 80, stock: true, img: null },
+    { id: "ps2", cat: "Pasta", name: "Red Sauce Cheese Tomato Twist Pasta", desc: "Tangy red sauce pasta with cheese.", price: 80, stock: true, img: null },
+    { id: "ps3", cat: "Pasta", name: "Mushroom Penne Pasta", desc: "Penne pasta tossed with mushroom.", price: 80, stock: true, img: null },
+    { id: "ps4", cat: "Pasta", name: "Masala Pasta", desc: "Pasta tossed in a spiced masala sauce.", price: 80, stock: true, img: null },
+    { id: "ps5", cat: "Pasta", name: "Tadka Masala Pasta", desc: "Pasta finished with a hot masala tadka.", price: 80, stock: true, img: null },
+
+    // ---- PUFF ----
+    { id: "pf1", cat: "Puff", name: "Aloo Puff", desc: "Flaky pastry puff with spiced potato filling.", price: 30, stock: true, img: null },
+    { id: "pf2", cat: "Puff", name: "Cheese Puff", desc: "Flaky pastry puff with a cheese filling.", price: 40, stock: true, img: null },
+
+    // ---- SANDWICHES (NON GRILLED) ----
+    { id: "sw1", cat: "Sandwiches (Non Grilled)", name: "Bread Butter", desc: "Simple bread with butter.", price: 40, stock: true, img: null },
+    { id: "sw2", cat: "Sandwiches (Non Grilled)", name: "Bread Jam", desc: "Simple bread with fruit jam.", price: 50, stock: true, img: null },
+    { id: "sw3", cat: "Sandwiches (Non Grilled)", name: "Cheese Jam Sandwich", desc: "Sandwich with cheese and jam.", price: 60, stock: true, img: null },
+    { id: "sw4", cat: "Sandwiches (Non Grilled)", name: "Cheese Chutney Sandwich", desc: "Sandwich with cheese and green chutney.", price: 60, stock: true, img: null },
+    { id: "sw5", cat: "Sandwiches (Non Grilled)", name: "Butter Jam Sandwich", desc: "Sandwich with butter and jam.", price: 70, stock: true, img: null },
+    { id: "sw6", cat: "Sandwiches (Non Grilled)", name: "Veg. Sandwich", desc: "Fresh mixed vegetable sandwich.", price: 50, stock: true, img: null },
+    { id: "sw7", cat: "Sandwiches (Non Grilled)", name: "Chocolate Sandwich", desc: "Sandwich with chocolate spread.", price: 70, stock: true, img: null },
+
+    // ---- SANDWICHES (GRILLED) - 2 LAYERED ----
+    { id: "gs1", cat: "Sandwiches (Grilled, 2-Layer)", name: "Fresh Vegetable Sandwich", desc: "Grilled sandwich, brown bread available.", price: 100, stock: true, img: null },
+    { id: "gs2", cat: "Sandwiches (Grilled, 2-Layer)", name: "Aloo Mutter Sandwich", desc: "Grilled sandwich with spiced potato & peas.", price: 100, stock: true, img: null },
+    { id: "gs3", cat: "Sandwiches (Grilled, 2-Layer)", name: "Veg. Cheese Mayo Sandwich", desc: "Grilled veg sandwich with cheese and mayo.", price: 100, stock: true, img: null },
+    { id: "gs4", cat: "Sandwiches (Grilled, 2-Layer)", name: "Paneer Corn Capsicum Sandwich", desc: "Grilled sandwich with paneer, corn, capsicum.", price: 100, stock: true, img: null },
+    { id: "gs5", cat: "Sandwiches (Grilled, 2-Layer)", name: "Cheese Corn Capsicum Sandwich", desc: "Grilled sandwich with cheese, corn, capsicum.", price: 100, stock: true, img: null },
+    { id: "gs6", cat: "Sandwiches (Grilled, 2-Layer)", name: "Cheese Chutney Sandwich (Grilled)", desc: "Grilled sandwich with cheese and chutney.", price: 100, stock: true, img: null },
+    { id: "gs7", cat: "Sandwiches (Grilled, 2-Layer)", name: "Mushroom Cheese Sandwich", desc: "Grilled sandwich with mushroom and cheese.", price: 100, stock: true, img: null },
+    { id: "gs8", cat: "Sandwiches (Grilled, 2-Layer)", name: "Maggie Sandwich", desc: "Grilled sandwich stuffed with Maggi noodles.", price: 130, stock: true, img: null },
+
+    // ---- SANDWICHES (GRILLED) - 3 LAYERED ----
+    { id: "gs9", cat: "Sandwiches (Grilled, 3-Layer)", name: "Veg. Club Sandwich", desc: "Triple-layer grilled veg club sandwich.", price: 130, stock: true, img: null },
+    { id: "gs10", cat: "Sandwiches (Grilled, 3-Layer)", name: "Bombay Club Sandwich", desc: "Triple-layer Bombay-style club sandwich.", price: 150, stock: true, img: null },
+    { id: "gs11", cat: "Sandwiches (Grilled, 3-Layer)", name: "Tandoori Paneer Sandwich", desc: "Triple-layer tandoori paneer sandwich.", price: 150, stock: true, img: null },
+    { id: "gs12", cat: "Sandwiches (Grilled, 3-Layer)", name: "Jungli Paneer Sandwich", desc: "Triple-layer spicy jungli paneer sandwich.", price: 150, stock: true, img: null },
+    { id: "gs13", cat: "Sandwiches (Grilled, 3-Layer)", name: "Dragon Sandwich", desc: "Triple-layer spicy dragon-style sandwich.", price: 150, stock: true, img: null },
+    { id: "gs14", cat: "Sandwiches (Grilled, 3-Layer)", name: "Russian Club Sandwich", desc: "Triple-layer Russian-style club sandwich.", price: 150, stock: true, img: null },
+    { id: "gs15", cat: "Sandwiches (Grilled, 3-Layer)", name: "Ghugra Sandwich", desc: "Triple-layer ghugra-style grilled sandwich.", price: 150, stock: true, img: null },
+    { id: "gs16", cat: "Sandwiches (Grilled, 3-Layer)", name: "Schezwan Paneer Sandwich", desc: "Triple-layer schezwan paneer sandwich.", price: 150, stock: true, img: null },
+
+    // ---- GRAB N GO (On MRP, GST Included) ----
+    { id: "gg1", cat: "Grab N Go", name: "Nestle Chocolates", desc: "Assorted Nestle chocolates — MRP.", price: 0, stock: true, img: null, mrp: true },
+    { id: "gg2", cat: "Grab N Go", name: "Selected Bakery Products", desc: "Assorted packaged bakery items — MRP.", price: 0, stock: true, img: null, mrp: true },
+    { id: "gg3", cat: "Grab N Go", name: "Packaged Drinking Water", desc: "Sealed bottled drinking water — MRP.", price: 0, stock: true, img: null, mrp: true },
+    { id: "gg4", cat: "Grab N Go", name: "Nescafe RTD", desc: "Ready-to-drink Nescafe bottle — MRP.", price: 0, stock: true, img: null, mrp: true }
   ];
 
-  const CATEGORY_ORDER = ["All", "Coffee", "Bakery & Crust", "Savoury", "Cold & Other"];
+  const CATEGORY_ORDER = ["All", "Pizza (8 Inch)", "Burgers", "Frenkies", "Sandwiches (Non Grilled)", "Sandwiches (Grilled, 2-Layer)", "Sandwiches (Grilled, 3-Layer)", "Maggi", "Pasta", "Puff", "French Fries", "Garlic Bread", "Quick Bites", "Breakfast", "Brownies", "Hot Beverages", "Cold Beverages", "Thick Shakes", "Grab N Go"];
   const TAX_RATE = 0.05;
   const PROMO_CODES = {
     "CAFE10": { type: "percent", value: 10, label: "CAFE10 (10% off)" },
@@ -1117,20 +1323,19 @@
   /* ======================= STATE ======================= */
   let currentCat = "All";
   let searchQuery = "";
-  let cart = {};           // { itemId: qty }
+  let cart = {};
   let appliedDiscount = null;
   let orderCounter = 1;
   let orderHistory = [];
+  let itemImages = {};     // { itemId: dataURL }  -- manually uploaded photos
 
   /* ======================= STORAGE ======================= */
-  const STORAGE_KEY = "coffeeAndCrust_v1";
+  const STORAGE_KEY = "coffeeAndCrust_v2";
+  const IMG_STORAGE_KEY = "coffeeAndCrust_itemImages_v1";
 
   function saveState() {
     try {
-      const payload = {
-        orderCounter: orderCounter,
-        orderHistory: orderHistory
-      };
+      const payload = { orderCounter: orderCounter, orderHistory: orderHistory };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch (e) {
       console.error("Save failed:", e);
@@ -1141,12 +1346,24 @@
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      if (data.orderCounter) orderCounter = data.orderCounter;
-      if (Array.isArray(data.orderHistory)) orderHistory = data.orderHistory;
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data.orderCounter) orderCounter = data.orderCounter;
+        if (Array.isArray(data.orderHistory)) orderHistory = data.orderHistory;
+      }
+      const rawImgs = localStorage.getItem(IMG_STORAGE_KEY);
+      if (rawImgs) itemImages = JSON.parse(rawImgs);
     } catch (e) {
       console.error("Load failed:", e);
+    }
+  }
+
+  function saveImages() {
+    try {
+      localStorage.setItem(IMG_STORAGE_KEY, JSON.stringify(itemImages));
+    } catch (e) {
+      console.error("Image save failed:", e);
+      showToast("⚠ Photo too large to save — try a smaller image");
     }
   }
 
@@ -1154,19 +1371,15 @@
   function fmt(n) {
     return "₹" + n.toFixed(2);
   }
-
   function pad4(n) {
     return "#" + String(n).padStart(4, "0");
   }
-
   function getItem(id) {
     return MENU.find(m => m.id === id);
   }
-
   function cartCount() {
     return Object.values(cart).reduce((a, b) => a + b, 0);
   }
-
   function cartSubtotal() {
     let sum = 0;
     for (const id in cart) {
@@ -1175,7 +1388,6 @@
     }
     return sum;
   }
-
   function computeDiscount(subtotal) {
     if (!appliedDiscount) return 0;
     if (appliedDiscount.type === "percent") {
@@ -1183,7 +1395,6 @@
     }
     return Math.min(appliedDiscount.value, subtotal);
   }
-
   function computeBill() {
     const subtotal = cartSubtotal();
     const discount = computeDiscount(subtotal);
@@ -1199,7 +1410,44 @@
     document.getElementById("toastMsg").textContent = msg;
     t.classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
+  }
+
+  /* ======================= IMAGE UPLOAD ======================= */
+  function handleImageUpload(itemId, file) {
+    if (!file || !file.type.startsWith("image/")) {
+      showToast("Please choose an image file");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      // downscale via canvas so localStorage doesn't fill up
+      const img = new Image();
+      img.onload = function() {
+        const maxDim = 500;
+        let w = img.width, h = img.height;
+        if (w > h && w > maxDim) { h = h * (maxDim / w); w = maxDim; }
+        else if (h > maxDim) { w = w * (maxDim / h); h = maxDim; }
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+        itemImages[itemId] = dataUrl;
+        saveImages();
+        renderMenu();
+        showToast("Photo added");
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeItemImage(itemId) {
+    delete itemImages[itemId];
+    saveImages();
+    renderMenu();
+    showToast("Photo removed");
   }
 
   /* ======================= RENDER: CATEGORY TABS ======================= */
@@ -1236,7 +1484,6 @@
       return;
     }
 
-    // group by category, preserving CATEGORY_ORDER
     const groups = {};
     items.forEach(it => {
       if (!groups[it.cat]) groups[it.cat] = [];
@@ -1253,6 +1500,13 @@
       head.className = "menu-section-head";
       head.innerHTML = `<h2>${cat}</h2><span class="count">${groups[cat].length} item${groups[cat].length !== 1 ? "s" : ""}</span>`;
       section.appendChild(head);
+
+      if (cat === "Grab N Go") {
+        const note = document.createElement("div");
+        note.className = "menu-section-note";
+        note.textContent = "Priced at MRP printed on the pack — ring up at counter.";
+        section.appendChild(note);
+      }
 
       const grid = document.createElement("div");
       grid.className = "menu-grid";
@@ -1272,6 +1526,43 @@
 
     const qty = cart[item.id] || 0;
     const outOfStock = !item.stock;
+    const savedImg = itemImages[item.id];
+
+    // --- image slot ---
+    const imgSlot = document.createElement("div");
+    imgSlot.className = "item-img-slot";
+
+    if (savedImg) {
+      imgSlot.innerHTML = `<img src="${savedImg}" alt="${item.name}">`;
+    } else {
+      imgSlot.innerHTML = `
+        <div class="img-placeholder">
+          <span class="icon-glyph">🖼️</span>
+          <span class="add-photo-txt">Add photo</span>
+        </div>`;
+    }
+
+    const uploadBtn = document.createElement("label");
+    uploadBtn.className = "img-upload-btn";
+    uploadBtn.title = savedImg ? "Change photo" : "Upload photo";
+    uploadBtn.innerHTML = savedImg ? "✎" : "＋";
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "image/*";
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleImageUpload(item.id, e.target.files[0]);
+      }
+      e.target.value = "";
+    });
+    uploadBtn.appendChild(fileInput);
+    imgSlot.appendChild(uploadBtn);
+
+    card.appendChild(imgSlot);
+
+    // --- body ---
+    const body = document.createElement("div");
+    body.className = "item-card-body";
 
     let controlHtml;
     if (outOfStock) {
@@ -1287,28 +1578,25 @@
       controlHtml = `<button class="add-btn" data-id="${item.id}" aria-label="Add ${item.name}">+</button>`;
     }
 
-    card.innerHTML = `
+    const priceLabel = item.mrp ? "As per MRP" : fmt(item.price);
+
+    body.innerHTML = `
       <div class="item-top">
-        <div>
-          <div class="item-name">${item.name}</div>
-        </div>
+        <div class="item-name">${item.name}</div>
       </div>
       <div class="item-desc">${item.desc}</div>
       <div class="item-bottom">
-        <span class="item-price mono">${fmt(item.price)}</span>
-        ${controlHtml}
+        <span class="item-price mono">${priceLabel}</span>
+        ${item.mrp ? "" : controlHtml}
       </div>
     `;
 
-    // wire events
-    const addBtn = card.querySelector(".add-btn");
-    if (addBtn) {
-      addBtn.addEventListener("click", () => {
-        addToCart(item.id);
-      });
-    }
-    const dec = card.querySelector(".q-dec");
-    const inc = card.querySelector(".q-inc");
+    card.appendChild(body);
+
+    const addBtn = body.querySelector(".add-btn");
+    if (addBtn) addBtn.addEventListener("click", () => addToCart(item.id));
+    const dec = body.querySelector(".q-dec");
+    const inc = body.querySelector(".q-inc");
     if (dec) dec.addEventListener("click", () => changeQty(item.id, -1));
     if (inc) inc.addEventListener("click", () => changeQty(item.id, 1));
 
@@ -1318,13 +1606,12 @@
   /* ======================= CART ACTIONS ======================= */
   function addToCart(id) {
     const item = getItem(id);
-    if (!item || !item.stock) return;
+    if (!item || !item.stock || item.mrp) return;
     cart[id] = (cart[id] || 0) + 1;
     renderMenu();
     renderTicket();
     showToast(`Added ${item.name}`);
   }
-
   function changeQty(id, delta) {
     if (!cart[id]) return;
     cart[id] += delta;
@@ -1332,13 +1619,11 @@
     renderMenu();
     renderTicket();
   }
-
   function removeFromCart(id) {
     delete cart[id];
     renderMenu();
     renderTicket();
   }
-
   function clearCart() {
     cart = {};
     appliedDiscount = null;
@@ -1413,10 +1698,8 @@
       discRow.style.display = "none";
     }
 
-    const confirmBtn = document.getElementById("confirmBtn");
-    confirmBtn.disabled = ids.length === 0;
+    document.getElementById("confirmBtn").disabled = ids.length === 0;
 
-    // mobile bar
     document.getElementById("mbCount").textContent = cartCount() + " item" + (cartCount() !== 1 ? "s" : "");
     document.getElementById("mbTotal").textContent = fmt(bill.total);
     document.getElementById("mobileBar").classList.toggle("visible", cartCount() > 0 && window.innerWidth <= 880);
@@ -1619,7 +1902,6 @@
     if (e.target.id === "confirmModal") document.getElementById("confirmModal").classList.remove("show");
   });
 
-  // history panel open/close
   function openHistory() {
     renderHistoryStats();
     renderHistoryList(document.getElementById("historySearch").value);
@@ -1636,7 +1918,6 @@
   document.getElementById("historySearch").addEventListener("input", (e) => renderHistoryList(e.target.value));
   document.getElementById("clearHistoryBtn").addEventListener("click", clearHistory);
 
-  // mobile order side toggle
   function openMobileOrder() {
     document.getElementById("orderSide").classList.add("show");
   }
@@ -1645,8 +1926,6 @@
   }
   document.getElementById("mobileCartBtn").addEventListener("click", openMobileOrder);
   document.getElementById("mbViewBtn").addEventListener("click", openMobileOrder);
-
-  // close mobile order ticket by clicking outside on small screens — simple swipe-down affordance via outside tap
   document.getElementById("orderSide").addEventListener("click", (e) => {
     if (e.target.id === "orderSide") closeMobileOrder();
   });
@@ -1654,9 +1933,7 @@
   window.addEventListener("resize", () => {
     const isMobile = window.innerWidth <= 880;
     document.getElementById("mobileCartBtn").style.display = isMobile ? "flex" : "none";
-    if (!isMobile) {
-      document.getElementById("orderSide").classList.remove("show");
-    }
+    if (!isMobile) document.getElementById("orderSide").classList.remove("show");
     renderTicket();
   });
 
@@ -1667,6 +1944,45 @@
       document.getElementById("confirmModal").classList.remove("show");
     }
   });
+
+  /* ======================= PWA INSTALL ======================= */
+  let deferredInstallPrompt = null;
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    document.getElementById("installBtn").classList.add("show");
+  });
+  document.getElementById("installBtn").addEventListener("click", async () => {
+    if (!deferredInstallPrompt) {
+      showToast("Use your browser's 'Add to Home Screen' menu to install");
+      return;
+    }
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    document.getElementById("installBtn").classList.remove("show");
+  });
+  window.addEventListener("appinstalled", () => {
+    document.getElementById("installBtn").classList.remove("show");
+    showToast("App installed — find it on your home screen");
+  });
+
+  // register service worker for offline + installability (only if file served over http/https)
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.protocol === "http:")) {
+    const swCode = `
+      const CACHE = "coffee-crust-v1";
+      self.addEventListener("install", (e) => { self.skipWaiting(); });
+      self.addEventListener("activate", (e) => { self.clients.claim(); });
+      self.addEventListener("fetch", (e) => {
+        e.respondWith(
+          fetch(e.request).catch(() => caches.match(e.request))
+        );
+      });
+    `;
+    const swBlob = new Blob([swCode], { type: "application/javascript" });
+    const swUrl = URL.createObjectURL(swBlob);
+    navigator.serviceWorker.register(swUrl).catch(() => {});
+  }
 
   /* ======================= INIT ======================= */
   function init() {
