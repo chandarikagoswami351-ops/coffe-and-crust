@@ -2089,7 +2089,8 @@
     const subtotal = cartSubtotal();
     const discount = computeDiscount(subtotal);
     const taxed = Math.max(subtotal - discount, 0);
-    
+    const tax = +(taxed * TAX_RATE).toFixed(2);
+    const total = +(taxed + tax).toFixed(2);
     return { subtotal, discount, tax, total };
   }
 
