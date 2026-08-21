@@ -8,6 +8,7 @@
 <meta name="description" content="Order counter for The Coffee and Crust cafe">
 <link rel="apple-touch-icon" href="logo.png">
 <link rel="icon" href="logo.png">
+<link rel="manifest" href="data:application/manifest+json;base64,MANIFEST_B64">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Coffee & Crust">
@@ -111,11 +112,6 @@
     overflow: hidden;
     box-shadow: 0 1px 4px rgba(0,0,0,0.15);
     border: 1px solid var(--line);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--panel);
-    font-size: 20px;
   }
   .brand-mark img {
     width: 100%;
@@ -171,6 +167,14 @@
   }
   .pill-solid:hover { background: #234c70; }
 
+  .install-btn {
+    display: none;
+    background: var(--crust);
+    color: var(--white);
+  }
+  .install-btn.show { display: flex; }
+  .install-btn:hover { background: #d97f5f; }
+
   .owner-btn {
     background: var(--espresso);
     color: var(--crust-soft);
@@ -194,31 +198,6 @@
     0%, 100% { opacity: 1; transform: scale(1); }
     50% { opacity: 0.45; transform: scale(0.75); }
   }
-
-  /* ---------- Sync indicator ---------- */
-  .sync-indicator {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--ink-soft);
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    flex-shrink: 0;
-  }
-  .sync-indicator .sd {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #b8c8d4;
-    flex-shrink: 0;
-  }
-  .sync-indicator.live .sd { background: var(--good); animation: pulseDot 1.8s ease-in-out infinite; }
-  .sync-indicator.syncing .sd { background: var(--crust); animation: pulseDot 0.7s ease-in-out infinite; }
-  .sync-indicator.err .sd { background: var(--danger); }
 
   /* ---------- Layout ---------- */
   .app {
@@ -1227,7 +1206,6 @@
     border-top: 1px dashed var(--line);
   }
   .horder-total { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--espresso); }
-  .horder-taken { font-size: 10px; color: var(--ink-soft); margin-top: 2px; }
   .status-select {
     font-size: 11px;
     font-weight: 600;
@@ -1320,7 +1298,6 @@
     .topbar { padding: calc(12px + var(--safe-top)) 14px 12px; }
     .pill-btn span.txt { display: none; }
     .pill-btn { padding: 9px 12px; }
-    .sync-indicator span.sync-txt { display: none; }
   }
 
   @media (max-width: 480px) {
@@ -1681,16 +1658,16 @@
 
 <div class="topbar">
   <div class="brand">
-    <div class="brand-mark" id="brandMark">☕</div>
+    <div class="brand-mark"><img src="logo.png" alt="The Coffee and Crust logo"></div>
     <div class="brand-text">
       <h1>The Coffee and Crust</h1>
       <span id="brandSub">Order Counter</span>
     </div>
   </div>
   <div class="topbar-actions">
-    <div class="sync-indicator" id="syncIndicator" title="Cross-device sync status">
-      <span class="sd"></span><span class="sync-txt" id="syncLabel">Sync</span>
-    </div>
+    <button class="pill-btn install-btn" id="installBtn">
+      <span>⬇</span><span class="txt">Install App</span>
+    </button>
     <button class="pill-btn owner-btn" id="ownerToggleBtn">
       <span class="owner-dot"></span><span class="txt" id="ownerBtnLabel">Owner Login</span>
     </button>
@@ -1750,6 +1727,7 @@
     <div class="bill-summary">
       <div class="bill-row"><span>Subtotal</span><span class="val" id="sumSubtotal">₹0.00</span></div>
       <div class="bill-row discount" id="sumDiscountRow" style="display:none;"><span id="sumDiscountLabel">Discount</span><span class="val" id="sumDiscount">−₹0.00</span></div>
+      <div class="bill-row"><span>Tax (5%)</span><span class="val" id="sumTax">₹0.00</span></div>
       <div class="bill-total">
         <span class="lbl">Total</span>
         <span class="amt" id="sumTotal">₹0.00</span>
@@ -1830,10 +1808,6 @@
      Change these to whatever you want. This is a light front-of-house
      lock (not bank-grade security) — good enough to stop random
      customers from opening the owner panel on a shared counter tablet.
-     NOTE: staff PIN and owner credentials are intentionally kept local
-     to each device's login screen (not synced), so anyone opening the
-     app still has to know them to get in. Everything AFTER login
-     (menu, prices, stock, photos, orders) is what syncs everywhere.
   ============================================================== */
   const STAFF_PIN = "1234";
   const OWNER_USERNAME = "jeet";
@@ -1841,21 +1815,6 @@
 
   const AUTH_KEY = "coffeeAndCrust_auth_v1";
   let authState = { role: null, name: "" }; // role: null | "staff" | "owner"
-
-  /* ======================= SHARED / CROSS-DEVICE STATE =======================
-     Everything in SHARED_KEYS lives in window.storage with shared=true, so
-     the owner's phone, the staff tablet, and any other device that opens
-     this app all read and write the SAME data. We poll on an interval and
-     also re-sync after every local action, so an owner's price change or
-     new photo shows up on staff screens within a few seconds automatically.
-  ============================================================== */
-  const SHARED_MENU_KEY = "shared:menu";
-  const SHARED_IMAGES_KEY = "shared:item-images";
-  const SHARED_ORDERS_KEY = "shared:order-history";
-  const SHARED_COUNTER_KEY = "shared:order-counter";
-  const POLL_MS = 4000;
-
-  const hasCloudStorage = !!(window.storage && typeof window.storage.get === "function");
 
   /* ======================= MENU DATA (from your printed menu) ======================= */
   let MENU = [
@@ -2007,11 +1966,11 @@
   ];
 
   const CATEGORY_ORDER = ["All", "Pizza (8 Inch)", "Burgers", "Frenkies", "Sandwiches (Non Grilled)", "Sandwiches (Grilled, 2-Layer)", "Sandwiches (Grilled, 3-Layer)", "Maggi", "Pasta", "Puff", "French Fries", "Garlic Bread", "Quick Bites", "Breakfast", "Brownies", "Hot Beverages", "Cold Beverages", "Thick Shakes", "Grab N Go"];
+  const TAX_RATE = 0.05;
   const PROMO_CODES = {
     "CAFE10": { type: "percent", value: 10, label: "CAFE10 (10% off)" },
     "WELCOME50": { type: "flat", value: 50, label: "WELCOME50 (₹50 off)" }
   };
-  // Tax system removed — bill = subtotal minus discount, no tax line added.
 
   /* ======================= STATE ======================= */
   let currentCat = "All";
@@ -2020,33 +1979,25 @@
   let appliedDiscount = null;
   let orderCounter = 1;
   let orderHistory = [];
-  let itemImages = {};     // { itemId: dataURL }  -- manually uploaded photos, synced across devices
+  let itemImages = {};     // { itemId: dataURL }  -- manually uploaded photos
   let editingItemId = null; // owner: which card currently has its edit row open
 
-  // version stamps so we only re-render when something actually changed on the server
-  let menuVersion = 0;
-  let imagesVersion = 0;
-  let ordersVersion = 0;
-  let isSyncing = false;
-  let pollTimer = null;
-
-  /* ======================= LOCAL STORAGE (fallback + auth) ======================= */
+  /* ======================= STORAGE ======================= */
   const STORAGE_KEY = "coffeeAndCrust_v2";
   const IMG_STORAGE_KEY = "coffeeAndCrust_itemImages_v1";
   const MENU_STORAGE_KEY = "coffeeAndCrust_menuData_v1";
 
-  function saveLocalFallback() {
+  function saveState() {
     try {
       const payload = { orderCounter: orderCounter, orderHistory: orderHistory };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-      localStorage.setItem(IMG_STORAGE_KEY, JSON.stringify(itemImages));
-      localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(MENU));
     } catch (e) {
-      console.error("Local fallback save failed:", e);
+      console.error("Save failed:", e);
+      showToast("⚠ Could not save data locally");
     }
   }
 
-  function loadLocalFallback() {
+  function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
@@ -2061,6 +2012,7 @@
       if (rawMenu) {
         const savedMenu = JSON.parse(rawMenu);
         if (Array.isArray(savedMenu) && savedMenu.length) {
+          // merge saved edits onto base MENU by id; keep any owner-added new items too
           const baseIds = new Set(MENU.map(m => m.id));
           const merged = MENU.map(baseItem => {
             const found = savedMenu.find(s => s.id === baseItem.id);
@@ -2077,7 +2029,25 @@
         if (a && (a.role === "staff" || a.role === "owner")) authState = a;
       }
     } catch (e) {
-      console.error("Local fallback load failed:", e);
+      console.error("Load failed:", e);
+    }
+  }
+
+  function saveImages() {
+    try {
+      localStorage.setItem(IMG_STORAGE_KEY, JSON.stringify(itemImages));
+    } catch (e) {
+      console.error("Image save failed:", e);
+      showToast("⚠ Photo too large to save — try a smaller image");
+    }
+  }
+
+  function saveMenu() {
+    try {
+      localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(MENU));
+    } catch (e) {
+      console.error("Menu save failed:", e);
+      showToast("⚠ Could not save menu changes locally");
     }
   }
 
@@ -2085,146 +2055,6 @@
     try {
       localStorage.setItem(AUTH_KEY, JSON.stringify(authState));
     } catch (e) { /* non-fatal */ }
-  }
-
-  /* ======================= CLOUD SYNC ======================= */
-  function setSyncStatus(state) {
-    // state: "live" | "syncing" | "off" | "err"
-    const el = document.getElementById("syncIndicator");
-    const label = document.getElementById("syncLabel");
-    if (!el) return;
-    el.classList.remove("live", "syncing", "err");
-    if (state === "live") { el.classList.add("live"); label.textContent = "Synced"; el.title = "Menu, stock, photos and orders sync automatically to every device."; }
-    else if (state === "syncing") { el.classList.add("syncing"); label.textContent = "Syncing…"; }
-    else if (state === "err") { el.classList.add("err"); label.textContent = "Local only"; el.title = "Cloud sync unavailable right now — changes are saved on this device only."; }
-    else { label.textContent = "Local only"; el.title = "Cloud sync isn't available in this environment — changes stay on this device."; }
-  }
-
-  async function cloudGet(key) {
-    if (!hasCloudStorage) return null;
-    try {
-      const res = await window.storage.get(key, true);
-      return res ? res.value : null;
-    } catch (e) {
-      return null; // key not present yet, or transient error
-    }
-  }
-
-  async function cloudSet(key, value) {
-    if (!hasCloudStorage) return false;
-    try {
-      const res = await window.storage.set(key, value, true);
-      return !!res;
-    } catch (e) {
-      console.error("cloudSet failed for " + key, e);
-      return false;
-    }
-  }
-
-  function bumpVersion(v) { return (v || 0) + 1; }
-
-  // --- push local changes up to the shared store ---
-  async function pushMenu() {
-    saveLocalFallback();
-    if (!hasCloudStorage) { setSyncStatus("off"); return; }
-    setSyncStatus("syncing");
-    menuVersion = bumpVersion(menuVersion);
-    const ok = await cloudSet(SHARED_MENU_KEY, JSON.stringify({ v: menuVersion, menu: MENU }));
-    setSyncStatus(ok ? "live" : "err");
-  }
-  async function pushImages() {
-    saveLocalFallback();
-    if (!hasCloudStorage) { setSyncStatus("off"); return; }
-    setSyncStatus("syncing");
-    imagesVersion = bumpVersion(imagesVersion);
-    const ok = await cloudSet(SHARED_IMAGES_KEY, JSON.stringify({ v: imagesVersion, images: itemImages }));
-    setSyncStatus(ok ? "live" : "err");
-  }
-  async function pushOrders() {
-    saveLocalFallback();
-    if (!hasCloudStorage) { setSyncStatus("off"); return; }
-    setSyncStatus("syncing");
-    ordersVersion = bumpVersion(ordersVersion);
-    const ok = await Promise.all([
-      cloudSet(SHARED_ORDERS_KEY, JSON.stringify({ v: ordersVersion, orders: orderHistory })),
-      cloudSet(SHARED_COUNTER_KEY, JSON.stringify({ counter: orderCounter }))
-    ]);
-    setSyncStatus(ok.every(Boolean) ? "live" : "err");
-  }
-
-  // --- pull shared state down and merge, without clobbering an in-progress owner edit ---
-  async function pullAll(isInitialLoad) {
-    if (!hasCloudStorage) { setSyncStatus("off"); return; }
-    if (!isInitialLoad) setSyncStatus("syncing");
-
-    let changed = false;
-
-    try {
-      const rawMenu = await cloudGet(SHARED_MENU_KEY);
-      if (rawMenu) {
-        const parsed = JSON.parse(rawMenu);
-        if (parsed && Array.isArray(parsed.menu) && parsed.v !== menuVersion) {
-          // don't yank the menu out from under the owner mid-edit on THIS device
-          if (!editingItemId) {
-            MENU = parsed.menu;
-            menuVersion = parsed.v;
-            changed = true;
-          }
-        }
-      } else if (isInitialLoad) {
-        // nothing in the cloud yet — seed it with our built-in menu so other devices can see it
-        await pushMenu();
-      }
-    } catch (e) { /* keep local copy */ }
-
-    try {
-      const rawImgs = await cloudGet(SHARED_IMAGES_KEY);
-      if (rawImgs) {
-        const parsed = JSON.parse(rawImgs);
-        if (parsed && parsed.images && parsed.v !== imagesVersion) {
-          itemImages = parsed.images;
-          imagesVersion = parsed.v;
-          changed = true;
-        }
-      }
-    } catch (e) { /* keep local copy */ }
-
-    try {
-      const rawOrders = await cloudGet(SHARED_ORDERS_KEY);
-      if (rawOrders) {
-        const parsed = JSON.parse(rawOrders);
-        if (parsed && Array.isArray(parsed.orders) && parsed.v !== ordersVersion) {
-          orderHistory = parsed.orders;
-          ordersVersion = parsed.v;
-          changed = true;
-        }
-      }
-      const rawCounter = await cloudGet(SHARED_COUNTER_KEY);
-      if (rawCounter) {
-        const parsed = JSON.parse(rawCounter);
-        if (parsed && typeof parsed.counter === "number" && parsed.counter > orderCounter) {
-          orderCounter = parsed.counter;
-          changed = true;
-        }
-      }
-    } catch (e) { /* keep local copy */ }
-
-    if (changed) {
-      saveLocalFallback();
-      renderMenu();
-      renderTicket();
-      renderHistoryStats();
-      if (document.getElementById("historyPanel").classList.contains("show")) {
-        renderHistoryList(document.getElementById("historySearch").value);
-      }
-    }
-    setSyncStatus("live");
-  }
-
-  function startPolling() {
-    if (!hasCloudStorage) { setSyncStatus("off"); return; }
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(() => pullAll(false), POLL_MS);
   }
 
   /* ======================= HELPERS ======================= */
@@ -2255,12 +2085,13 @@
     }
     return Math.min(appliedDiscount.value, subtotal);
   }
-  // Tax system removed: bill is subtotal minus discount only.
   function computeBill() {
     const subtotal = cartSubtotal();
     const discount = computeDiscount(subtotal);
-    const total = +Math.max(subtotal - discount, 0).toFixed(2);
-    return { subtotal, discount, total };
+    const taxed = Math.max(subtotal - discount, 0);
+    const tax = +(taxed * TAX_RATE).toFixed(2);
+    const total = +(taxed + tax).toFixed(2);
+    return { subtotal, discount, tax, total };
   }
 
   let toastTimer = null;
@@ -2346,13 +2177,12 @@
     }
     const btn = document.getElementById("staffSubmit");
     btn.classList.add("loading");
-    setTimeout(async () => {
+    setTimeout(() => {
       btn.classList.remove("loading");
       authState = { role: "staff", name: name };
       saveAuth();
       hideLoginScreen();
       showToast(`Welcome, ${name} — counter is open`);
-      await pullAll(true); // pick up the latest owner-set menu/prices/photos right away
     }, 450);
   }
 
@@ -2368,13 +2198,12 @@
     }
     const btn = document.getElementById("ownerSubmit");
     btn.classList.add("loading");
-    setTimeout(async () => {
+    setTimeout(() => {
       btn.classList.remove("loading");
       authState = { role: "owner", name: "Owner" };
       saveAuth();
       hideLoginScreen();
       showToast("Owner panel unlocked");
-      await pullAll(true);
     }, 500);
   }
 
@@ -2396,12 +2225,11 @@
       });
     });
 
-    document.getElementById("guestSkipBtn").addEventListener("click", async () => {
+    document.getElementById("guestSkipBtn").addEventListener("click", () => {
       authState = { role: null, name: "" };
       saveAuth();
       hideLoginScreen();
       showToast("Browsing as guest — sign in anytime to manage orders");
-      await pullAll(true);
     });
 
     // if already authenticated from a previous session, skip straight in
@@ -2442,7 +2270,7 @@
     if (!isOwner()) { wrap.innerHTML = ""; return; }
     wrap.innerHTML = `
       <div class="owner-banner">
-        <div class="ob-text"><span class="ob-dot"></span> Owner mode is on — changes here (name, price, stock, photos) save automatically and appear on every staff device within a few seconds.</div>
+        <div class="ob-text"><span class="ob-dot"></span> Owner mode is on — tap the pencil on any item to edit name, price &amp; stock, or add a new item below.</div>
         <button id="ownerAddQuickBtn">+ New Item</button>
       </div>`;
     document.getElementById("ownerAddQuickBtn").addEventListener("click", () => {
@@ -2479,7 +2307,6 @@
   function stopEditItem() {
     editingItemId = null;
     renderMenu();
-    pullAll(false); // now safe to accept any updates that arrived while editing
   }
 
   function commitItemEdit(id, nameVal, priceVal, inStockVal, hintEl) {
@@ -2494,7 +2321,7 @@
     item.name = newName;
     if (!item.mrp) item.price = newPrice;
     item.stock = inStockVal;
-    pushMenu();
+    saveMenu();
 
     if (hintEl) {
       hintEl.classList.add("show");
@@ -2507,12 +2334,12 @@
   function deleteMenuItem(id) {
     const item = getItem(id);
     if (!item) return;
-    if (!confirm(`Remove "${item.name}" from the menu? This can't be undone. It will disappear on every device.`)) return;
+    if (!confirm(`Remove "${item.name}" from the menu? This can't be undone.`)) return;
     MENU = MENU.filter(m => m.id !== id);
     delete cart[id];
     delete itemImages[id];
-    pushMenu();
-    pushImages();
+    saveMenu();
+    saveImages();
     editingItemId = null;
     renderMenu();
     renderTicket();
@@ -2523,7 +2350,7 @@
     const newId = "new" + Date.now().toString(36);
     const newItem = { id: newId, cat: cat, name: "New Item", desc: "Tap the pencil to edit this item.", price: 0, stock: true, img: null };
     MENU.push(newItem);
-    pushMenu();
+    saveMenu();
     editingItemId = newId;
     renderMenu();
     setTimeout(() => {
@@ -2540,7 +2367,7 @@
     }
     const reader = new FileReader();
     reader.onload = function(e) {
-      // downscale via canvas so storage doesn't fill up
+      // downscale via canvas so localStorage doesn't fill up
       const img = new Image();
       img.onload = function() {
         const maxDim = 500;
@@ -2553,9 +2380,9 @@
         ctx.drawImage(img, 0, 0, w, h);
         const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
         itemImages[itemId] = dataUrl;
-        pushImages();
+        saveImages();
         renderMenu();
-        showToast("Photo added — syncing to staff devices");
+        showToast("Photo added");
       };
       img.src = e.target.result;
     };
@@ -2679,23 +2506,23 @@
       imgSlot.appendChild(flag);
     }
 
-    if (isOwner()) {
-      const uploadBtn = document.createElement("label");
-      uploadBtn.className = "img-upload-btn";
-      uploadBtn.title = savedImg ? "Change photo" : "Upload photo";
-      uploadBtn.innerHTML = savedImg ? "✎" : "＋";
-      const fileInput = document.createElement("input");
-      fileInput.type = "file";
-      fileInput.accept = "image/*";
-      fileInput.addEventListener("change", (e) => {
-        if (e.target.files && e.target.files[0]) {
-          handleImageUpload(item.id, e.target.files[0]);
-        }
-        e.target.value = "";
-      });
-      uploadBtn.appendChild(fileInput);
-      imgSlot.appendChild(uploadBtn);
+    const uploadBtn = document.createElement("label");
+    uploadBtn.className = "img-upload-btn";
+    uploadBtn.title = savedImg ? "Change photo" : "Upload photo";
+    uploadBtn.innerHTML = savedImg ? "✎" : "＋";
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "image/*";
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleImageUpload(item.id, e.target.files[0]);
+      }
+      e.target.value = "";
+    });
+    uploadBtn.appendChild(fileInput);
+    imgSlot.appendChild(uploadBtn);
 
+    if (isOwner()) {
       const editToggle = document.createElement("button");
       editToggle.type = "button";
       editToggle.className = "owner-edit-toggle" + (editingItemId === item.id ? " active" : "");
@@ -2762,7 +2589,7 @@
         </div>
         <div style="display:flex; align-items:center; justify-content:space-between;">
           <button type="button" class="oe-delete-btn">Delete item</button>
-          <span class="oe-save-hint">Saved & synced ✓</span>
+          <span class="oe-save-hint">Saved ✓</span>
         </div>
       `;
       card.appendChild(editRow);
@@ -2892,6 +2719,7 @@
 
     const bill = computeBill();
     document.getElementById("sumSubtotal").textContent = fmt(bill.subtotal);
+    document.getElementById("sumTax").textContent = fmt(bill.tax);
     const totalEl = document.getElementById("sumTotal");
     totalEl.textContent = fmt(bill.total);
     if (bill.total !== lastTotal) {
@@ -2935,7 +2763,7 @@
   }
 
   /* ======================= CONFIRM ORDER ======================= */
-  async function confirmOrder() {
+  function confirmOrder() {
     const ids = Object.keys(cart);
     if (ids.length === 0) return;
 
@@ -2948,19 +2776,6 @@
       return { id: id, name: item.name, price: item.price, qty: cart[id], lineTotal: +(item.price * cart[id]).toFixed(2) };
     });
 
-    // pull the freshest counter first so two devices confirming at once don't collide on the same order number
-    if (hasCloudStorage) {
-      try {
-        const rawCounter = await cloudGet(SHARED_COUNTER_KEY);
-        if (rawCounter) {
-          const parsed = JSON.parse(rawCounter);
-          if (parsed && typeof parsed.counter === "number" && parsed.counter > orderCounter) {
-            orderCounter = parsed.counter;
-          }
-        }
-      } catch (e) { /* proceed with local counter */ }
-    }
-
     const order = {
       orderId: pad4(orderCounter),
       orderNum: orderCounter,
@@ -2971,6 +2786,7 @@
       subtotal: bill.subtotal,
       discount: bill.discount,
       discountLabel: appliedDiscount ? appliedDiscount.label : null,
+      tax: bill.tax,
       total: bill.total,
       status: "Confirmed",
       timestamp: new Date().toISOString(),
@@ -2979,7 +2795,7 @@
 
     orderHistory.unshift(order);
     orderCounter += 1;
-    pushOrders();
+    saveState();
 
     showReceipt(order);
     clearCart();
@@ -3005,6 +2821,10 @@
       row.innerHTML = `<span class="rname" style="color:var(--good)">${order.discountLabel}</span><span class="rval" style="color:var(--good)">−${fmt(order.discount)}</span>`;
       linesWrap.appendChild(row);
     }
+    const taxRow = document.createElement("div");
+    taxRow.className = "receipt-line";
+    taxRow.innerHTML = `<span class="rname">Tax (5%)</span><span class="rval">${fmt(order.tax)}</span>`;
+    linesWrap.appendChild(taxRow);
 
     document.getElementById("receiptTotal").textContent = fmt(order.total);
     document.getElementById("confirmModal").classList.add("show");
@@ -3036,7 +2856,7 @@
     }
 
     if (list.length === 0) {
-      wrap.innerHTML = `<div class="history-empty">${orderHistory.length === 0 ? "No orders yet. Confirmed orders will show up here — from every device." : "No orders match your search."}</div>`;
+      wrap.innerHTML = `<div class="history-empty">${orderHistory.length === 0 ? "No orders yet. Confirmed orders will show up here." : "No orders match your search."}</div>`;
       return;
     }
 
@@ -3058,10 +2878,7 @@
         </div>
         <div class="horder-items">${itemsStr}</div>
         <div class="horder-bottom">
-          <div>
-            <span class="horder-total mono">${fmt(order.total)}</span>
-            <div class="horder-taken">Taken by ${order.takenBy || "Guest"}</div>
-          </div>
+          <span class="horder-total mono">${fmt(order.total)}</span>
           <select class="status-select" data-id="${order.orderId}">
             <option ${order.status === "Confirmed" ? "selected" : ""}>Confirmed</option>
             <option ${order.status === "Preparing" ? "selected" : ""}>Preparing</option>
@@ -3081,18 +2898,18 @@
     const order = orderHistory.find(o => o.orderId === orderId);
     if (!order) return;
     order.status = newStatus;
-    pushOrders();
+    saveState();
     renderHistoryList(document.getElementById("historySearch").value);
-    showToast(`${orderId} marked ${newStatus} — synced`);
+    showToast(`${orderId} marked ${newStatus}`);
   }
 
   function clearHistory() {
-    if (!confirm("Clear all saved order history on every device? This cannot be undone.")) return;
+    if (!confirm("Clear all saved order history? This cannot be undone.")) return;
     orderHistory = [];
-    pushOrders();
+    saveState();
     renderHistoryStats();
     renderHistoryList("");
-    showToast("Order history cleared everywhere");
+    showToast("Order history cleared");
   }
 
   /* ======================= EVENTS ======================= */
@@ -3126,7 +2943,6 @@
   });
 
   function openHistory() {
-    pullAll(false);
     renderHistoryStats();
     renderHistoryList(document.getElementById("historySearch").value);
     document.getElementById("historyPanel").classList.add("show");
@@ -3169,16 +2985,48 @@
     }
   });
 
-  // re-sync immediately whenever the tab/app regains focus, so switching back
-  // to the app after the owner made a change elsewhere shows it right away
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") pullAll(false);
+  /* ======================= PWA INSTALL ======================= */
+  let deferredInstallPrompt = null;
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    document.getElementById("installBtn").classList.add("show");
   });
-  window.addEventListener("focus", () => pullAll(false));
+  document.getElementById("installBtn").addEventListener("click", async () => {
+    if (!deferredInstallPrompt) {
+      showToast("Use your browser's 'Add to Home Screen' menu to install");
+      return;
+    }
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    document.getElementById("installBtn").classList.remove("show");
+  });
+  window.addEventListener("appinstalled", () => {
+    document.getElementById("installBtn").classList.remove("show");
+    showToast("App installed — find it on your home screen");
+  });
+
+  // register service worker for offline + installability (only if file served over http/https)
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.protocol === "http:")) {
+    const swCode = `
+      const CACHE = "coffee-crust-v1";
+      self.addEventListener("install", (e) => { self.skipWaiting(); });
+      self.addEventListener("activate", (e) => { self.clients.claim(); });
+      self.addEventListener("fetch", (e) => {
+        e.respondWith(
+          fetch(e.request).catch(() => caches.match(e.request))
+        );
+      });
+    `;
+    const swBlob = new Blob([swCode], { type: "application/javascript" });
+    const swUrl = URL.createObjectURL(swBlob);
+    navigator.serviceWorker.register(swUrl).catch(() => {});
+  }
 
   /* ======================= INIT ======================= */
-  async function init() {
-    loadLocalFallback();
+  function init() {
+    loadState();
     initLoginScreen();
     renderCatTabs();
     renderMenu();
@@ -3188,10 +3036,6 @@
 
     const isMobile = window.innerWidth <= 880;
     document.getElementById("mobileCartBtn").style.display = isMobile ? "flex" : "none";
-
-    setSyncStatus(hasCloudStorage ? "syncing" : "off");
-    await pullAll(true);
-    startPolling();
   }
 
   init();
