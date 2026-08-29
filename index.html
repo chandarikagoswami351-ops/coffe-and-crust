@@ -427,27 +427,6 @@
     letter-spacing: 0.04em;
     opacity: 0.7;
   }
-  .img-upload-btn {
-    position: absolute;
-    bottom: 6px;
-    right: 6px;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: rgba(44, 95, 138, 0.88);
-    color: var(--white);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    backdrop-filter: blur(2px);
-    transition: background 0.15s ease, transform 0.1s ease;
-    z-index: 2;
-  }
-  .img-upload-btn:hover { background: var(--sky-deep); transform: scale(1.06); }
-  .img-upload-btn:active { transform: scale(0.94); }
-  .item-img-slot input[type="file"] { display: none; }
-
   .owner-stock-flag {
     position: absolute;
     top: 8px;
@@ -2233,7 +2212,7 @@
     ownerUsername: "jeet",
     ownerPassword: "jeet7410",
     logoDataUrl: null,          // overrides logo.png everywhere when set
-    defaultUpiId: "coffeeandcrust@upi"
+    defaultUpiId: "jeetchaudhari649@oksbi" // Jeet Chaudhari's real UPI ID, decoded from the owner's QR code
   };
 
   const AUTH_KEY = "coffeeAndCrust_auth_v1";
@@ -3303,37 +3282,6 @@
     }, 30);
   }
 
-  /* ======================= IMAGE UPLOAD ======================= */
-  function handleImageUpload(itemId, file) {
-    if (!file || !file.type.startsWith("image/")) {
-      showToast("Please choose an image file");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      // downscale via canvas so localStorage doesn't fill up
-      const img = new Image();
-      img.onload = function() {
-        const maxDim = 500;
-        let w = img.width, h = img.height;
-        if (w > h && w > maxDim) { h = h * (maxDim / w); w = maxDim; }
-        else if (h > maxDim) { w = w * (maxDim / h); h = maxDim; }
-        const canvas = document.createElement("canvas");
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, w, h);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
-        itemImages[itemId] = dataUrl;
-        saveImages();
-        broadcastSync("images", itemImages);
-        renderMenu();
-        showToast("Photo added");
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
   /* ======================= RENDER: CATEGORY TABS ======================= */
   function renderCatTabs() {
     const wrap = document.getElementById("catTabs");
@@ -3429,7 +3377,10 @@
 
     const qty = cart[item.id] || 0;
     const outOfStock = !item.stock;
-    const savedImg = itemImages[item.id];
+    // Photo priority: item.img (code-defined, baked-in photo) first, so it
+    // shows identically on every device. No per-device localStorage photo
+    // lookup anymore — see note in MENU data on how to add a photo.
+    const savedImg = item.img || null;
 
     // --- image slot ---
     const imgSlot = document.createElement("div");
@@ -3441,7 +3392,7 @@
       imgSlot.innerHTML = `
         <div class="img-placeholder">
           <span class="icon-glyph">🖼️</span>
-          <span class="add-photo-txt">Add photo</span>
+          <span class="add-photo-txt">No photo yet</span>
         </div>`;
     }
 
@@ -3452,21 +3403,10 @@
       imgSlot.appendChild(flag);
     }
 
-    const uploadBtn = document.createElement("label");
-    uploadBtn.className = "img-upload-btn";
-    uploadBtn.title = savedImg ? "Change photo" : "Upload photo";
-    uploadBtn.innerHTML = savedImg ? "✎" : "＋";
-    const fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.accept = "image/*";
-    fileInput.addEventListener("change", (e) => {
-      if (e.target.files && e.target.files[0]) {
-        handleImageUpload(item.id, e.target.files[0]);
-      }
-      e.target.value = "";
-    });
-    uploadBtn.appendChild(fileInput);
-    imgSlot.appendChild(uploadBtn);
+    // NOTE: the per-card "upload photo" button has been removed on purpose.
+    // Photos are now added by editing the MENU array in the code (the img
+    // field on each item) so they appear identically on every device the
+    // moment the page loads, instead of being stuck in one browser's storage.
 
     if (isOwner()) {
       const editToggle = document.createElement("button");
@@ -3533,6 +3473,7 @@
           <div class="stock-switch ${item.stock ? "in-stock" : ""}"></div>
           <span class="st-label">${item.stock ? "In stock" : "Out of stock"}</span>
         </div>
+        <div class="staff-hint" style="margin:0;">To add or change this item's photo, paste a new base64 image string into its <code>img</code> field in the code.</div>
         <div style="display:flex; align-items:center; justify-content:space-between;">
           <button type="button" class="oe-delete-btn">Delete item</button>
           <span class="oe-save-hint">Saved ✓</span>
@@ -4006,9 +3947,6 @@
       renderMenu(changedIds);
       renderTicket();
       if (!isOwner()) showToast("Menu updated by owner", true);
-    } else if (kind === "images") {
-      if (payload && typeof payload === "object") itemImages = payload;
-      renderMenu();
     } else if (kind === "settings") {
       if (payload && typeof payload === "object") {
         const logoChanged = payload.logoDataUrl !== settings.logoDataUrl;
